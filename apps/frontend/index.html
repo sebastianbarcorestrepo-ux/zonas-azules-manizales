@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zonas Azules - Manizales</title>
-  <!-- Leaflet CSS para el mapa -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -47,19 +46,18 @@
     <p class="subtitle">Monitoreo y geolocalización en tiempo real</p>
   </header>
 
-  <!-- Contenedor del Mapa -->
   <div id="map"></div>
-
-  <!-- Tarjetas de información -->
   <div id="zones-container" class="grid">Cargando zonas...</div>
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Inicializar mapa centrado en Manizales
+    // Inicializar mapa en Manizales
     const map = L.map('map').setView([5.0689, -75.5174], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+
+    // Servidor de mapas alternativo sin bloqueo 403
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap, © CARTO',
+      maxZoom: 19
     }).addTo(map);
 
     async function cargarZonas() {
@@ -71,14 +69,12 @@
         container.innerHTML = '';
 
         zonas.forEach(zona => {
-          // Crear marcador en el mapa
           if (zona.latitude && zona.longitude) {
-            L.marker([zona.latitude, zona.longitude])
+            L.marker([parseFloat(zona.latitude), parseFloat(zona.longitude)])
              .addTo(map)
              .bindPopup(`<b>${zona.name}</b><br>${zona.address}<br>Tarifa: $${zona.rate_per_minute}/min`);
           }
 
-          // Crear tarjeta HTML
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `
@@ -89,7 +85,7 @@
           container.appendChild(card);
         });
       } catch (error) {
-        document.getElementById('zones-container').innerHTML = '<p style="color:red; text-align:center;">Error al conectar con la API backend.</p>';
+        document.getElementById('zones-container').innerHTML = '<p style="color:red; text-align:center;">Error al conectar con la API backend. Asegúrate de iniciar "node index.js".</p>';
       }
     }
 
