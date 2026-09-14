@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zonas Azules - Manizales</title>
+  <!-- Leaflet CSS para el mapa -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; padding: 20px; }
-    header { margin-bottom: 25px; text-align: center; }
+    header { margin-bottom: 20px; text-align: center; }
     h1 { color: #0056b3; font-size: 1.8rem; margin-bottom: 5px; }
     p.subtitle { color: #666; font-size: 0.95rem; }
     
-    /* Layout Responsive con Grid */
+    #map { height: 350px; width: 100%; max-width: 1200px; margin: 0 auto 25px auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    
     .grid { 
       display: grid; 
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
@@ -26,18 +29,14 @@
       border-radius: 12px; 
       box-shadow: 0 4px 10px rgba(0,0,0,0.06); 
       border-top: 4px solid #0056b3; 
-      transition: transform 0.2s ease;
     }
-    .card:hover { transform: translateY(-3px); }
     .card h3 { color: #2c3e50; font-size: 1.2rem; margin-bottom: 10px; }
     .card p { color: #555; margin-bottom: 8px; font-size: 0.9rem; }
     .price { color: #28a745; font-weight: bold; font-size: 1rem; }
 
-    /* Adaptación específica para celulares */
     @media (max-width: 480px) {
       body { padding: 12px; }
-      h1 { font-size: 1.4rem; }
-      .grid { grid-template-columns: 1fr; }
+      #map { height: 250px; }
     }
   </style>
 </head>
@@ -45,12 +44,24 @@
 
   <header>
     <h1>Zonas Azules de Manizales</h1>
-    <p class="subtitle">Consulta de estado y tarifas en tiempo real</p>
+    <p class="subtitle">Monitoreo y geolocalización en tiempo real</p>
   </header>
 
+  <!-- Contenedor del Mapa -->
+  <div id="map"></div>
+
+  <!-- Tarjetas de información -->
   <div id="zones-container" class="grid">Cargando zonas...</div>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // Inicializar mapa centrado en Manizales
+    const map = L.map('map').setView([5.0689, -75.5174], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
     async function cargarZonas() {
       try {
         const res = await fetch('http://localhost:3000/api/zones');
@@ -60,6 +71,14 @@
         container.innerHTML = '';
 
         zonas.forEach(zona => {
+          // Crear marcador en el mapa
+          if (zona.latitude && zona.longitude) {
+            L.marker([zona.latitude, zona.longitude])
+             .addTo(map)
+             .bindPopup(`<b>${zona.name}</b><br>${zona.address}<br>Tarifa: $${zona.rate_per_minute}/min`);
+          }
+
+          // Crear tarjeta HTML
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `
@@ -70,7 +89,7 @@
           container.appendChild(card);
         });
       } catch (error) {
-        document.getElementById('zones-container').innerHTML = '<p style="color:red; text-align:center;">Error al conectar con la API backend. Asegúrate de tener ejecutando "node index.js".</p>';
+        document.getElementById('zones-container').innerHTML = '<p style="color:red; text-align:center;">Error al conectar con la API backend.</p>';
       }
     }
 
