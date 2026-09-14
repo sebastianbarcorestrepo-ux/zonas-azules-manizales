@@ -54,11 +54,11 @@
     // Inicializar mapa en Manizales
     const map = L.map('map').setView([5.0689, -75.5174], 13);
 
-    // Servidor de mapas alternativo sin bloqueo 403
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap, © CARTO',
-      maxZoom: 19
-    }).addTo(map);
+    // Servidor de mapa público sin API Key
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap France',
+  maxZoom: 19
+  }).addTo(map);
 
     async function cargarZonas() {
       try {
