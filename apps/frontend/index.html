@@ -1,1 +1,80 @@
-<!DOCTYPE html><html><head><title>Zonas Azules Manizales</title></head><body><h1>Zonas Azules - Manizales</h1></body></html> 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zonas Azules - Manizales</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; padding: 20px; }
+    header { margin-bottom: 25px; text-align: center; }
+    h1 { color: #0056b3; font-size: 1.8rem; margin-bottom: 5px; }
+    p.subtitle { color: #666; font-size: 0.95rem; }
+    
+    /* Layout Responsive con Grid */
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+      gap: 20px; 
+      max-width: 1200px; 
+      margin: 0 auto; 
+    }
+    
+    .card { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06); 
+      border-top: 4px solid #0056b3; 
+      transition: transform 0.2s ease;
+    }
+    .card:hover { transform: translateY(-3px); }
+    .card h3 { color: #2c3e50; font-size: 1.2rem; margin-bottom: 10px; }
+    .card p { color: #555; margin-bottom: 8px; font-size: 0.9rem; }
+    .price { color: #28a745; font-weight: bold; font-size: 1rem; }
+
+    /* Adaptación específica para celulares */
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      h1 { font-size: 1.4rem; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Zonas Azules de Manizales</h1>
+    <p class="subtitle">Consulta de estado y tarifas en tiempo real</p>
+  </header>
+
+  <div id="zones-container" class="grid">Cargando zonas...</div>
+
+  <script>
+    async function cargarZonas() {
+      try {
+        const res = await fetch('http://localhost:3000/api/zones');
+        const zonas = await res.json();
+
+        const container = document.getElementById('zones-container');
+        container.innerHTML = '';
+
+        zonas.forEach(zona => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>${zona.name}</h3>
+            <p><strong>Dirección:</strong> ${zona.address}</p>
+            <p class="price">Tarifa: $${zona.rate_per_minute} / min</p>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        document.getElementById('zones-container').innerHTML = '<p style="color:red; text-align:center;">Error al conectar con la API backend. Asegúrate de tener ejecutando "node index.js".</p>';
+      }
+    }
+
+    cargarZonas();
+  </script>
+</body>
+</html>
