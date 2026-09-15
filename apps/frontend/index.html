@@ -21,10 +21,22 @@
     .zone-card { background: #007bff; color: white; border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
     .zone-card:hover, .zone-card.active { background: #0056b3; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     
-    /* Seccion Celdas */
+    /* Seccion Celdas y Barra de Herramientas */
     .spots-section { border-top: 2px solid #e0e0e0; padding-top: 20px; }
-    .grid-spots { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-top: 20px; }
-    .spot-card { border-radius: 8px; padding: 20px; text-align: center; font-weight: bold; color: white; transition: 0.3s; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .filter-group button { background: #e0e0e0; color: #333; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .filter-group button.active { background: #007bff; color: white; }
+    .btn-add { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+
+    /* Tarjeta de Recaudo Financiero */
+    .revenue-bar { background: #1a2a3a; color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+    /* Tarjetas de Celdas */
+    .grid-spots { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 15px; }
+    .spot-card { border-radius: 8px; padding: 15px; text-align: center; font-weight: bold; color: white; transition: 0.3s; position: relative; }
+    .spot-card h3 { margin: 0 0 5px 0; font-size: 1.2rem; }
+    .spot-card p { margin: 3px 0; font-size: 0.9rem; }
+    .spot-card .plate-tag { background: rgba(0,0,0,0.25); border-radius: 4px; padding: 2px 6px; font-family: monospace; font-size: 0.85rem; display: inline-block; margin-top: 5px; }
     .available { background-color: #2e7d32; } /* Verde */
     .occupied { background-color: #c62828; }  /* Rojo */
     
@@ -32,6 +44,11 @@
     button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
     .btn-occupy { background: #d32f2f; color: white; }
     .btn-release { background: #388e3c; color: white; }
+
+    /* Modal Formulario */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 25px; border-radius: 8px; width: 300px; text-align: center; }
+    .modal-content input { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -44,14 +61,48 @@
     <!-- Lista de Zonas -->
     <div id="zones-container" class="zones-grid">Cargando zonas...</div>
 
-    <!-- Celdas de la Zona Seleccionada -->
+    <!-- Seccion Celdas -->
     <div class="spots-section">
       <h2 id="selected-zone-title">Selecciona una zona para ver sus celdas</h2>
+
+      <!-- Tarjeta de Recaudo y Tarifa -->
+      <div class="revenue-bar">
+        <div>
+          🏷️ Tarifa Carros: <span style="color: #ffc107; font-weight: bold;">$3.900 COP / Hora</span>
+        </div>
+        <div>
+          💰 Recaudo Acumulado: <span id="total-revenue" style="color: #28a745; font-size: 1.1rem; font-weight: bold;">$0 COP</span> (<span id="total-sessions">0</span> cobros)
+        </div>
+      </div>
+
+      <!-- Barra de Filtros y Crear Celda -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <button id="btn-filter-all" class="active" onclick="filtrarCeldas('all')">Todas</button>
+          <button id="btn-filter-free" onclick="filtrarCeldas('available')">Libres</button>
+          <button id="btn-filter-busy" onclick="filtrarCeldas('occupied')">Ocupadas</button>
+        </div>
+        <button class="btn-add" onclick="abrirModalNuevaCelda()">+ Nueva Celda</button>
+      </div>
+
       <div id="spots-container" class="grid-spots">Elige una zona del mapa o de las tarjetas superiores.</div>
 
       <div class="controls" id="simulation-controls" style="display: none;">
         <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (COL-01)</button>
         <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (COL-01)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Crear Nueva Celda -->
+  <div class="modal" id="modal-spot">
+    <div class="modal-content">
+      <h3>Agregar Celda</h3>
+      <p id="modal-zone-name" style="font-weight: bold; color: #007bff;"></p>
+      <input type="text" id="new-spot-number" placeholder="Ej: COL-05" />
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+        <button class="btn-add" onclick="guardarNuevaCelda()">Guardar</button>
+        <button style="background: #6c757d; color: white;" onclick="cerrarModal()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -62,8 +113,10 @@
   <script>
     const API_URL = 'http://localhost:3000/api';
     let map;
-    let zonaActual = '';
+    let zonaActual = null;
     let intervalId = null;
+    let filtroActual = 'all';
+    let celdasCache = [];
 
     // Inicializar Mapa centrado en Manizales (Proveedor Esri 100% Libre)
     function initMap() {
@@ -82,7 +135,6 @@
         container.innerHTML = '';
 
         zonas.forEach(zona => {
-          // Crear tarjeta
           const card = document.createElement('div');
           card.className = 'zone-card';
           card.id = `card-${zona.name.replace(/\s+/g, '-')}`;
@@ -93,7 +145,6 @@
           card.onclick = () => seleccionarZona(zona);
           container.appendChild(card);
 
-          // Crear Pin/Marcador en el Mapa si tiene coordenadas
           if (zona.latitude && zona.longitude) {
             const marker = L.marker([parseFloat(zona.latitude), parseFloat(zona.longitude)]).addTo(map);
             marker.bindPopup(`<b>${zona.name}</b><br>${zona.direccion || zona.address || ''}`);
@@ -101,7 +152,6 @@
           }
         });
 
-        // Seleccionar Zona Coliseo por defecto
         const coliseo = zonas.find(z => z.name.toLowerCase().includes('coliseo')) || zonas[0];
         if (coliseo) seleccionarZona(coliseo);
 
@@ -110,97 +160,168 @@
       }
     }
 
-    // Al hacer clic en una zona (en la tarjeta o en el mapa)
+    // Al hacer clic en una zona
     function seleccionarZona(zona) {
-      zonaActual = zona.name;
+      zonaActual = zona;
       
-      // Resaltar tarjeta activa
       document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active'));
       const activeCard = document.getElementById(`card-${zona.name.replace(/\s+/g, '-')}`);
       if (activeCard) activeCard.classList.add('active');
 
-      // Centrar el mapa con animación suave
       if (zona.latitude && zona.longitude) {
-        map.flyTo([parseFloat(zona.latitude), parseFloat(zona.longitude)], 17, {
-          duration: 1.5
-        });
+        map.flyTo([parseFloat(zona.latitude), parseFloat(zona.longitude)], 17, { duration: 1.5 });
       }
 
-      // Mostrar u ocultar botones de simulación según la zona
       const isColiseo = zona.name.toLowerCase().includes('coliseo');
       document.getElementById('simulation-controls').style.display = isColiseo ? 'flex' : 'none';
 
-      // Cargar celdas de la zona seleccionada
       cargarCeldas(zona.name);
+      cargarRecaudo(zona.name);
 
-      // Mantener actualización automática
       if (intervalId) clearInterval(intervalId);
-      intervalId = setInterval(() => cargarCeldas(zonaActual), 3000);
+      intervalId = setInterval(() => {
+        cargarCeldas(zona.name);
+        cargarRecaudo(zona.name);
+      }, 3000);
     }
 
-    // Consultar celdas de la zona en el backend y calcular estadísticas
+    // Consultar recaudo acumulado por zona
+    async function cargarRecaudo(nombreZona) {
+      try {
+        const res = await fetch(`${API_URL}/zones/${nombreZona}/revenue`);
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('total-revenue').innerText = `$${parseInt(data.total_revenue || 0).toLocaleString('es-CO')} COP`;
+        document.getElementById('total-sessions').innerText = data.total_sessions || 0;
+      } catch (err) {
+        console.error('Error al cargar recaudo:', err);
+      }
+    }
+
+    // Consultar celdas de la zona
     async function cargarCeldas(nombreZona) {
       try {
         const res = await fetch(`${API_URL}/zones/${nombreZona}/spots`);
-        const celdas = await res.json();
-        const container = document.getElementById('spots-container');
+        celdasCache = await res.json();
+        
         const titleElement = document.getElementById('selected-zone-title');
-        container.innerHTML = '';
 
-        if (!Array.isArray(celdas) || celdas.length === 0) {
+        if (!Array.isArray(celdasCache) || celdasCache.length === 0) {
           titleElement.innerText = `Celdas - ${nombreZona} (Sin celdas registradas)`;
-          container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">Esta zona no tiene celdas registradas aún.</p>';
+          document.getElementById('spots-container').innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">Esta zona no tiene celdas registradas aún.</p>';
           return;
         }
 
-        // Calcular disponibilidad
-        const ocupadas = celdas.filter(s => s.status === 'occupied').length;
-        const libres = celdas.length - ocupadas;
+        const ocupadas = celdasCache.filter(s => s.status === 'occupied').length;
+        const libres = celdasCache.length - ocupadas;
         titleElement.innerText = `Celdas - ${nombreZona} (${libres} Libres / ${ocupadas} Ocupadas)`;
 
-        // Renderizar tarjetas de celdas
-        celdas.forEach(spot => {
-          const card = document.createElement('div');
-          const isOccupied = spot.status === 'occupied';
-          card.className = `spot-card ${isOccupied ? 'occupied' : 'available'}`;
-          card.innerHTML = `
-            <h3>${spot.spot_number}</h3>
-            <p>${isOccupied ? 'OCUPADO' : 'LIBRE'}</p>
-          `;
-          container.appendChild(card);
-        });
+        renderizarCeldas();
       } catch (err) {
         console.error('Error al cargar celdas:', err);
       }
     }
 
+    // Renderizar celdas aplicando el filtro activo
+    function renderizarCeldas() {
+      const container = document.getElementById('spots-container');
+      container.innerHTML = '';
+
+      const celdasFiltradas = celdasCache.filter(s => {
+        if (filtroActual === 'available') return s.status === 'available';
+        if (filtroActual === 'occupied') return s.status === 'occupied';
+        return true;
+      });
+
+      if (celdasFiltradas.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">No hay celdas para este filtro.</p>';
+        return;
+      }
+
+      celdasFiltradas.forEach(spot => {
+        const card = document.createElement('div');
+        const isOccupied = spot.status === 'occupied';
+        card.className = `spot-card ${isOccupied ? 'occupied' : 'available'}`;
+        
+        let plateHTML = isOccupied && spot.current_plate ? `<div class="plate-tag">🚘 ${spot.current_plate}</div>` : '';
+
+        card.innerHTML = `
+          <h3>${spot.spot_number}</h3>
+          <p>${isOccupied ? 'OCUPADO' : 'LIBRE'}</p>
+          ${plateHTML}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Filtrar celdas
+    function filtrarCeldas(filtro) {
+      filtroActual = filtro;
+      document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
+      if (filtro === 'all') document.getElementById('btn-filter-all').classList.add('active');
+      if (filtro === 'available') document.getElementById('btn-filter-free').classList.add('active');
+      if (filtro === 'occupied') document.getElementById('btn-filter-busy').classList.add('active');
+      renderizarCeldas();
+    }
+
+    // Modal para nueva celda
+    function abrirModalNuevaCelda() {
+      if (!zonaActual) return alert("Selecciona una zona primero");
+      document.getElementById('modal-zone-name').innerText = `Zona: ${zonaActual.name}`;
+      document.getElementById('modal-spot').style.display = 'flex';
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-spot').style.display = 'none';
+      document.getElementById('new-spot-number').value = '';
+    }
+
+    async function guardarNuevaCelda() {
+      const spotNumber = document.getElementById('new-spot-number').value.trim();
+      if (!spotNumber) return alert("Ingresa un número de celda");
+
+      try {
+        const res = await fetch(`${API_URL}/spots`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ zone_id: zonaActual.id, spot_number: spotNumber })
+        });
+        if (res.ok) {
+          cerrarModal();
+          cargarCeldas(zonaActual.name);
+        } else {
+          alert("Error al guardar la celda");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
     async function simularOcupacion() {
-      const res = await fetch(`${API_URL}/zones/coliseo/spots`);
-      const celdas = await res.json();
-      if (celdas.length > 0) {
+      if (celdasCache.length > 0) {
         await fetch(`${API_URL}/spots/occupy`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ spot_id: celdas[0].id, license_plate: 'DEMO123' })
+          body: JSON.stringify({ spot_id: celdasCache[0].id, license_plate: 'MZL-999' })
         });
-        cargarCeldas(zonaActual);
+        cargarCeldas(zonaActual.name);
+        cargarRecaudo(zonaActual.name);
       }
     }
 
     async function simularLiberacion() {
-      const res = await fetch(`${API_URL}/zones/coliseo/spots`);
-      const celdas = await res.json();
-      if (celdas.length > 0) {
+      if (celdasCache.length > 0) {
         await fetch(`${API_URL}/spots/release`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ spot_id: celdas[0].id })
+          body: JSON.stringify({ spot_id: celdasCache[0].id })
         });
-        cargarCeldas(zonaActual);
+        cargarCeldas(zonaActual.name);
+        cargarRecaudo(zonaActual.name);
       }
     }
 
-    // Inicialización al cargar la página
+    // Inicialización
     initMap();
     cargarZonas();
   </script>
