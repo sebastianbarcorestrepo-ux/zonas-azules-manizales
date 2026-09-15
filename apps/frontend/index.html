@@ -3,15 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zonas Azules Manizales - Control de Celdas</title>
+  <title>Zonas Azules - Manizales</title>
+  
+  <!-- Leaflet CSS (Mapa) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-    h1 { color: #1a2a3a; text-align: center; }
-    .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .grid-spots { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+    h1, h2 { color: #1a2a3a; text-align: center; margin-bottom: 10px; }
+    .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    
+    /* Contenedor del Mapa */
+    #map { height: 350px; width: 100%; border-radius: 8px; margin-bottom: 20px; z-index: 1; }
+
+    /* Tarjetas de Zonas */
+    .zones-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .zone-card { background: #007bff; color: white; border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
+    .zone-card:hover, .zone-card.active { background: #0056b3; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    
+    /* Seccion Celdas */
+    .spots-section { border-top: 2px solid #e0e0e0; padding-top: 20px; }
+    .grid-spots { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-top: 20px; }
     .spot-card { border-radius: 8px; padding: 20px; text-align: center; font-weight: bold; color: white; transition: 0.3s; }
     .available { background-color: #2e7d32; } /* Verde */
     .occupied { background-color: #c62828; }  /* Rojo */
+    
     .controls { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
     button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
     .btn-occupy { background: #d32f2f; color: white; }
@@ -20,25 +36,129 @@
 </head>
 <body>
   <div class="container">
-    <h1>Zona Coliseo - Estado de Celdas en Tiempo Real</h1>
-    <div id="spots-container" class="grid-spots">Cargando celdas...</div>
+    <h1>🅿️ Zonas Azules Manizales</h1>
+    
+    <!-- Mapa de Manizales -->
+    <div id="map"></div>
 
-    <div class="controls">
-      <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (COL-01)</button>
-      <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (COL-01)</button>
+    <!-- Lista de Zonas -->
+    <div id="zones-container" class="zones-grid">Cargando zonas...</div>
+
+    <!-- Celdas de la Zona Seleccionada -->
+    <div class="spots-section">
+      <h2 id="selected-zone-title">Selecciona una zona para ver sus celdas</h2>
+      <div id="spots-container" class="grid-spots">Elige una zona del mapa o de las tarjetas superiores.</div>
+
+      <div class="controls" id="simulation-controls" style="display: none;">
+        <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (COL-01)</button>
+        <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (COL-01)</button>
+      </div>
     </div>
   </div>
 
+  <!-- Leaflet JS (Mapa) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script>
     const API_URL = 'http://localhost:3000/api';
+    let map;
+    let zonaActual = '';
+    let intervalId = null;
 
-    async function cargarCeldas() {
+    // Inicializar Mapa centrado en Manizales (Proveedor Esri 100% Libre)
+    function initMap() {
+      map = L.map('map').setView([5.0689, -75.5174], 14);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+      }).addTo(map);
+    }
+
+    // Cargar las zonas desde la API y colocar los pines en el mapa
+    async function cargarZonas() {
       try {
-        const res = await fetch(`${API_URL}/zones/coliseo/spots`);
-        const celdas = await res.json();
-        const container = document.getElementById('spots-container');
+        const res = await fetch(`${API_URL}/zones`);
+        const zonas = await res.json();
+        const container = document.getElementById('zones-container');
         container.innerHTML = '';
 
+        zonas.forEach(zona => {
+          // Crear tarjeta
+          const card = document.createElement('div');
+          card.className = 'zone-card';
+          card.id = `card-${zona.name.replace(/\s+/g, '-')}`;
+          card.innerHTML = `
+            <h3>${zona.name}</h3>
+            <p>${zona.direccion || zona.address || ''}</p>
+          `;
+          card.onclick = () => seleccionarZona(zona);
+          container.appendChild(card);
+
+          // Crear Pin/Marcador en el Mapa si tiene coordenadas
+          if (zona.latitude && zona.longitude) {
+            const marker = L.marker([parseFloat(zona.latitude), parseFloat(zona.longitude)]).addTo(map);
+            marker.bindPopup(`<b>${zona.name}</b><br>${zona.direccion || zona.address || ''}`);
+            marker.on('click', () => seleccionarZona(zona));
+          }
+        });
+
+        // Seleccionar Zona Coliseo por defecto
+        const coliseo = zonas.find(z => z.name.toLowerCase().includes('coliseo')) || zonas[0];
+        if (coliseo) seleccionarZona(coliseo);
+
+      } catch (err) {
+        console.error('Error al cargar zonas:', err);
+      }
+    }
+
+    // Al hacer clic en una zona (en la tarjeta o en el mapa)
+    function seleccionarZona(zona) {
+      zonaActual = zona.name;
+      
+      // Resaltar tarjeta activa
+      document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active'));
+      const activeCard = document.getElementById(`card-${zona.name.replace(/\s+/g, '-')}`);
+      if (activeCard) activeCard.classList.add('active');
+
+      // Centrar el mapa con animación suave
+      if (zona.latitude && zona.longitude) {
+        map.flyTo([parseFloat(zona.latitude), parseFloat(zona.longitude)], 17, {
+          duration: 1.5
+        });
+      }
+
+      // Mostrar u ocultar botones de simulación según la zona
+      const isColiseo = zona.name.toLowerCase().includes('coliseo');
+      document.getElementById('simulation-controls').style.display = isColiseo ? 'flex' : 'none';
+
+      // Cargar celdas de la zona seleccionada
+      cargarCeldas(zona.name);
+
+      // Mantener actualización automática
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => cargarCeldas(zonaActual), 3000);
+    }
+
+    // Consultar celdas de la zona en el backend y calcular estadísticas
+    async function cargarCeldas(nombreZona) {
+      try {
+        const res = await fetch(`${API_URL}/zones/${nombreZona}/spots`);
+        const celdas = await res.json();
+        const container = document.getElementById('spots-container');
+        const titleElement = document.getElementById('selected-zone-title');
+        container.innerHTML = '';
+
+        if (!Array.isArray(celdas) || celdas.length === 0) {
+          titleElement.innerText = `Celdas - ${nombreZona} (Sin celdas registradas)`;
+          container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">Esta zona no tiene celdas registradas aún.</p>';
+          return;
+        }
+
+        // Calcular disponibilidad
+        const ocupadas = celdas.filter(s => s.status === 'occupied').length;
+        const libres = celdas.length - ocupadas;
+        titleElement.innerText = `Celdas - ${nombreZona} (${libres} Libres / ${ocupadas} Ocupadas)`;
+
+        // Renderizar tarjetas de celdas
         celdas.forEach(spot => {
           const card = document.createElement('div');
           const isOccupied = spot.status === 'occupied';
@@ -57,32 +177,32 @@
     async function simularOcupacion() {
       const res = await fetch(`${API_URL}/zones/coliseo/spots`);
       const celdas = await res.json();
-      if(celdas.length > 0) {
+      if (celdas.length > 0) {
         await fetch(`${API_URL}/spots/occupy`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ spot_id: celdas[0].id, license_plate: 'DEMO123' })
         });
-        cargarCeldas();
+        cargarCeldas(zonaActual);
       }
     }
 
     async function simularLiberacion() {
       const res = await fetch(`${API_URL}/zones/coliseo/spots`);
       const celdas = await res.json();
-      if(celdas.length > 0) {
+      if (celdas.length > 0) {
         await fetch(`${API_URL}/spots/release`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ spot_id: celdas[0].id })
         });
-        cargarCeldas();
+        cargarCeldas(zonaActual);
       }
     }
 
-    // Actualizar celdas cada 3 segundos
-    cargarCeldas();
-    setInterval(cargarCeldas, 3000);
+    // Inicialización al cargar la página
+    initMap();
+    cargarZonas();
   </script>
 </body>
 </html>
