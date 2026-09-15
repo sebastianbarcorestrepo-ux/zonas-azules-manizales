@@ -3,93 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zonas Azules - Manizales</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <title>Zonas Azules Manizales - Control de Celdas</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; padding: 20px; }
-    header { margin-bottom: 20px; text-align: center; }
-    h1 { color: #0056b3; font-size: 1.8rem; margin-bottom: 5px; }
-    p.subtitle { color: #666; font-size: 0.95rem; }
-    
-    #map { height: 350px; width: 100%; max-width: 1200px; margin: 0 auto 25px auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    
-    .grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-      gap: 20px; 
-      max-width: 1200px; 
-      margin: 0 auto; 
-    }
-    
-    .card { 
-      background: white; 
-      padding: 20px; 
-      border-radius: 12px; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.06); 
-      border-top: 4px solid #0056b3; 
-    }
-    .card h3 { color: #2c3e50; font-size: 1.2rem; margin-bottom: 10px; }
-    .card p { color: #555; margin-bottom: 8px; font-size: 0.9rem; }
-    .price { color: #28a745; font-weight: bold; font-size: 1rem; }
-
-    @media (max-width: 480px) {
-      body { padding: 12px; }
-      #map { height: 250px; }
-    }
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+    h1 { color: #1a2a3a; text-align: center; }
+    .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .grid-spots { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+    .spot-card { border-radius: 8px; padding: 20px; text-align: center; font-weight: bold; color: white; transition: 0.3s; }
+    .available { background-color: #2e7d32; } /* Verde */
+    .occupied { background-color: #c62828; }  /* Rojo */
+    .controls { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+    button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-occupy { background: #d32f2f; color: white; }
+    .btn-release { background: #388e3c; color: white; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h1>Zona Coliseo - Estado de Celdas en Tiempo Real</h1>
+    <div id="spots-container" class="grid-spots">Cargando celdas...</div>
 
-  <header>
-    <h1>Zonas Azules de Manizales</h1>
-    <p class="subtitle">Monitoreo y geolocalización en tiempo real</p>
-  </header>
+    <div class="controls">
+      <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (COL-01)</button>
+      <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (COL-01)</button>
+    </div>
+  </div>
 
-  <div id="map"></div>
-  <div id="zones-container" class="grid">Cargando zonas...</div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Inicializar mapa en Manizales
-    const map = L.map('map').setView([5.0689, -75.5174], 13);
+    const API_URL = 'http://localhost:3000/api';
 
-    // Servidor de mapa público sin API Key
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap France',
-  maxZoom: 19
-  }).addTo(map);
-
-    async function cargarZonas() {
+    async function cargarCeldas() {
       try {
-        const res = await fetch('http://localhost:3000/api/zones');
-        const zonas = await res.json();
-
-        const container = document.getElementById('zones-container');
+        const res = await fetch(`${API_URL}/zones/coliseo/spots`);
+        const celdas = await res.json();
+        const container = document.getElementById('spots-container');
         container.innerHTML = '';
 
-        zonas.forEach(zona => {
-          if (zona.latitude && zona.longitude) {
-            L.marker([parseFloat(zona.latitude), parseFloat(zona.longitude)])
-             .addTo(map)
-             .bindPopup(`<b>${zona.name}</b><br>${zona.address}<br>Tarifa: $${zona.rate_per_minute}/min`);
-          }
-
+        celdas.forEach(spot => {
           const card = document.createElement('div');
-          card.className = 'card';
+          const isOccupied = spot.status === 'occupied';
+          card.className = `spot-card ${isOccupied ? 'occupied' : 'available'}`;
           card.innerHTML = `
-            <h3>${zona.name}</h3>
-            <p><strong>Dirección:</strong> ${zona.address}</p>
-            <p class="price">Tarifa: $${zona.rate_per_minute} / min</p>
+            <h3>${spot.spot_number}</h3>
+            <p>${isOccupied ? 'OCUPADO' : 'LIBRE'}</p>
           `;
           container.appendChild(card);
         });
-      } catch (error) {
-        document.getElementById('zones-container').innerHTML = '<p style="color:red; text-align:center;">Error al conectar con la API backend. Asegúrate de iniciar "node index.js".</p>';
+      } catch (err) {
+        console.error('Error al cargar celdas:', err);
       }
     }
 
-    cargarZonas();
+    async function simularOcupacion() {
+      const res = await fetch(`${API_URL}/zones/coliseo/spots`);
+      const celdas = await res.json();
+      if(celdas.length > 0) {
+        await fetch(`${API_URL}/spots/occupy`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ spot_id: celdas[0].id, license_plate: 'DEMO123' })
+        });
+        cargarCeldas();
+      }
+    }
+
+    async function simularLiberacion() {
+      const res = await fetch(`${API_URL}/zones/coliseo/spots`);
+      const celdas = await res.json();
+      if(celdas.length > 0) {
+        await fetch(`${API_URL}/spots/release`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ spot_id: celdas[0].id })
+        });
+        cargarCeldas();
+      }
+    }
+
+    // Actualizar celdas cada 3 segundos
+    cargarCeldas();
+    setInterval(cargarCeldas, 3000);
   </script>
 </body>
 </html>
