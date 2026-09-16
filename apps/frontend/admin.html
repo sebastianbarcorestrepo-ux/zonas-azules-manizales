@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard General - Zonas Azules Manizales</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #f4f6f9; margin: 0; padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; background: #1b2a47; color: white; padding: 15px 25px; border-radius: 8px; margin-bottom: 25px; }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
+    .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #6c757d; text-transform: uppercase; }
+    .card .value { font-size: 1.8rem; font-weight: bold; color: #2b3a4a; }
+    .card .value.green { color: #28a745; }
+    .card .value.blue { color: #007bff; }
+    .section-title { font-size: 1.2rem; color: #1b2a47; margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 5px; }
+    table { width: 100%; background: white; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #e9ecef; color: #495057; font-size: 0.85rem; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📊 Dashboard de Control y Recaudo</h1>
+    <span>Zonas Azules Manizales</span>
+  </header>
+
+  <div class="section-title">Indicadores de Recaudo General</div>
+  <div class="grid">
+    <div class="card">
+      <h3>Recaudo Hoy</h3>
+      <div class="value green" id="rev-day">$0 COP</div>
+    </div>
+    <div class="card">
+      <h3>Recaudo Mes</h3>
+      <div class="value green" id="rev-month">$0 COP</div>
+    </div>
+    <div class="card">
+      <h3>Recaudo Año</h3>
+      <div class="value green" id="rev-year">$0 COP</div>
+    </div>
+    <div class="card">
+      <h3>% Ocupación Actual</h3>
+      <div class="value blue" id="occ-rate">0%</div>
+    </div>
+  </div>
+
+  <div class="section-title">Consolidado por Zonas</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Zona</th>
+        <th>Tarifa Base</th>
+        <th>Celdas Totales</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="zones-table">
+      <!-- Carga dinámica -->
+    </tbody>
+  </table>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+
+    async function cargarMetricas() {
+      try {
+        const res = await fetch(`${API_URL}/admin/metrics`);
+        const data = await res.json();
+
+        document.getElementById('rev-day').innerText = `$${data.revenue.day.toLocaleString('es-CO')} COP`;
+        document.getElementById('rev-month').innerText = `$${data.revenue.month.toLocaleString('es-CO')} COP`;
+        document.getElementById('rev-year').innerText = `$${data.revenue.year.toLocaleString('es-CO')} COP`;
+        document.getElementById('occ-rate').innerText = `${data.occupancy.rate}%`;
+      } catch (e) {
+        console.error('Error al cargar métricas:', e);
+      }
+    }
+
+    async function cargarZonas() {
+      try {
+        const res = await fetch(`${API_URL}/zones`);
+        const zonas = await res.json();
+        const tbody = document.getElementById('zones-table');
+        tbody.innerHTML = '';
+
+        zonas.forEach(z => {
+          tbody.innerHTML += `
+            <tr>
+              <td><b>${z.name}</b></td>
+              <td>$3.900 COP / Hora</td>
+              <td>10 Celdas</td>
+              <td><span style="color: green; font-weight: bold;">Activa</span></td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.error('Error al cargar zonas:', e);
+      }
+    }
+
+    cargarMetricas();
+    cargarZonas();
+  </script>
+</body>
+</html>

@@ -3,6 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
+// Agregamos el módulo de autenticación
+const authRoutes = require('./auth');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -14,6 +17,9 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT || 5432,
 });
+
+// Middleware para rutas de Autenticación (Login / Registro / JWT)
+app.use('/api/auth', authRoutes);
 
 // Tarifa oficial: $3.900 COP / Hora (calculada por minuto)
 const TARIFA_POR_MINUTO = 3900 / 60; 
@@ -114,6 +120,59 @@ app.get('/api/zones/:identifier/revenue', async (req, res) => {
       [identifier, `%${identifier}%`]
     );
     res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Endpoint: Métricas Consolidadas para Dashboard Admin (Día, Mes, Año y Ocupación)
+app.get('/api/admin/metrics', async (req, res) => {
+  try {
+    // Recaudo Día
+    const revenueToday = await pool.query(`
+      SELECT COALESCE(SUM(total_amount), 0) AS total 
+      FROM parking_sessions 
+      WHERE status = 'completed' AND DATE(exit_time) = CURRENT_DATE;
+    `);
+
+    // Recaudo Mes
+    const revenueMonth = await pool.query(`
+      SELECT COALESCE(SUM(total_amount), 0) AS total 
+      FROM parking_sessions 
+      WHERE status = 'completed' AND DATE_TRUNC('month', exit_time) = DATE_TRUNC('month', CURRENT_DATE);
+    `);
+
+    // Recaudo Año
+    const revenueYear = await pool.query(`
+      SELECT COALESCE(SUM(total_amount), 0) AS total 
+      FROM parking_sessions 
+      WHERE status = 'completed' AND DATE_TRUNC('year', exit_time) = DATE_TRUNC('year', CURRENT_DATE);
+    `);
+
+    // % Ocupación Actual
+    const occupancy = await pool.query(`
+      SELECT 
+        COUNT(*) AS total_spots,
+        COUNT(CASE WHEN status = 'occupied' THEN 1 END) AS occupied_spots
+      FROM parking_spots;
+    `);
+
+    const total = parseInt(occupancy.rows[0].total_spots) || 1;
+    const occupied = parseInt(occupancy.rows[0].occupied_spots) || 0;
+    const occupancyRate = ((occupied / total) * 100).toFixed(1);
+
+    res.json({
+      revenue: {
+        day: parseFloat(revenueToday.rows[0].total),
+        month: parseFloat(revenueMonth.rows[0].total),
+        year: parseFloat(revenueYear.rows[0].total)
+      },
+      occupancy: {
+        rate: occupancyRate,
+        occupied,
+        total
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
