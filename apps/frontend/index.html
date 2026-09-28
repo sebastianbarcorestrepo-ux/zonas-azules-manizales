@@ -4,14 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zonas Azules - Manizales</title>
-  
+
   <!-- Leaflet CSS (Mapa) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 0; color: #1a2a3a; }
     h1, h2 { color: #1a2a3a; text-align: center; margin-bottom: 10px; }
-    .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+    /* Header y Barra de Navegación */
+    header {
+      background-color: #ffffff;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-logo { background: #007bff; color: white; font-weight: bold; padding: 6px 12px; border-radius: 6px; font-size: 20px; }
+    .brand-title { font-size: 20px; font-weight: bold; color: #1a2a3a; margin: 0; }
+
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    .btn-nav { padding: 10px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; text-decoration: none; font-size: 14px; transition: 0.2s; }
+    .btn-apk { background-color: #6f42c1; color: white; display: flex; align-items: center; gap: 6px; }
+    .btn-apk:hover { background-color: #59359a; }
+    .btn-pay { background-color: #28a745; color: white; display: flex; align-items: center; gap: 6px; }
+    .btn-pay:hover { background-color: #218838; }
+    .btn-login { background-color: #007bff; color: white; display: flex; align-items: center; gap: 6px; }
+    .btn-login:hover { background-color: #0056b3; }
+
+    /* Contenedor Principal */
+    .container { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     
     /* Contenedor del Mapa */
     #map { height: 350px; width: 100%; border-radius: 8px; margin-bottom: 20px; z-index: 1; }
@@ -45,16 +73,31 @@
     .btn-occupy { background: #d32f2f; color: white; }
     .btn-release { background: #388e3c; color: white; }
 
-    /* Modal Formulario */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10; justify-content: center; align-items: center; }
-    .modal-content { background: white; padding: 25px; border-radius: 8px; width: 300px; text-align: center; }
-    .modal-content input { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+    /* Modales */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 25px; border-radius: 8px; width: 320px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .modal-content input { width: 90%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; }
   </style>
 </head>
 <body>
+
+  <!-- HEADER NAVEGACIÓN -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <h1 class="brand-title">Zonas Azules Manizales</h1>
+    </div>
+    <div class="nav-actions">
+      <!-- BOTÓN DESCARGAR APK MÓVIL -->
+      <a href="/api/download/apk" download="ZonasAzules.apk" class="btn-nav btn-apk">📲 Descargar App (APK)</a>
+      <!-- BOTÓN PAGO MÓVIL -->
+      <a href="user.html" class="btn-nav btn-pay">💳 Realizar Pago</a>
+      <!-- BOTÓN INGRESO SISTEMA -->
+      <button class="btn-nav btn-login" onclick="abrirModalLogin()">🔐 Ingreso Sistema</button>
+    </div>
+  </header>
+
   <div class="container">
-    <h1>🅿️ Zonas Azules Manizales</h1>
-    
     <!-- Mapa de Manizales -->
     <div id="map"></div>
 
@@ -71,7 +114,7 @@
           🏷️ Tarifa Carros: <span style="color: #ffc107; font-weight: bold;">$3.900 COP / Hora</span>
         </div>
         <div>
-          💰 Recaudo Acumulado: <span id="total-revenue" style="color: #28a745; font-size: 1.1rem; font-weight: bold;">$0 COP</span> (<span id="total-sessions">0</span> cobros)
+          💰 Recaudo Acumulado: <span id="total-revenue" style="color: #28a745; font-size: 1.1rem; font-weight: bold;">$0 COP</span>
         </div>
       </div>
 
@@ -88,8 +131,8 @@
       <div id="spots-container" class="grid-spots">Elige una zona del mapa o de las tarjetas superiores.</div>
 
       <div class="controls" id="simulation-controls" style="display: none;">
-        <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (COL-01)</button>
-        <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (COL-01)</button>
+        <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (IA)</button>
+        <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (IA)</button>
       </div>
     </div>
   </div>
@@ -107,11 +150,25 @@
     </div>
   </div>
 
+  <!-- Modal de Ingreso Administrador/Sistema -->
+  <div class="modal" id="modal-login">
+    <div class="modal-content">
+      <h3>Ingreso al Sistema</h3>
+      <p style="font-size: 0.85rem; color: #666;">Ingresa tus credenciales para acceder al Dashboard de recaudos.</p>
+      <input type="email" id="login-email" placeholder="Correo electrónico" />
+      <input type="password" id="login-password" placeholder="Contraseña" />
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+        <button class="btn-add" style="background: #007bff;" onclick="iniciarSesion()">Ingresar</button>
+        <button style="background: #6c757d; color: white;" onclick="cerrarModalLogin()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Leaflet JS (Mapa) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const API_URL = 'http://localhost:3000/api';
+    const API_URL = '/api';
     let map;
     let zonaActual = null;
     let intervalId = null;
@@ -137,7 +194,7 @@
         zonas.forEach(zona => {
           const card = document.createElement('div');
           card.className = 'zone-card';
-          card.id = `card-${zona.name.replace(/\s+/g, '-')}`;
+          card.id = `card-${zona.id}`;
           card.innerHTML = `
             <h3>${zona.name}</h3>
             <p>${zona.direccion || zona.address || ''}</p>
@@ -152,8 +209,8 @@
           }
         });
 
-        const coliseo = zonas.find(z => z.name.toLowerCase().includes('coliseo')) || zonas[0];
-        if (coliseo) seleccionarZona(coliseo);
+        const zonaInicial = zonas[0];
+        if (zonaInicial) seleccionarZona(zonaInicial);
 
       } catch (err) {
         console.error('Error al cargar zonas:', err);
@@ -165,56 +222,54 @@
       zonaActual = zona;
       
       document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active'));
-      const activeCard = document.getElementById(`card-${zona.name.replace(/\s+/g, '-')}`);
+      const activeCard = document.getElementById(`card-${zona.id}`);
       if (activeCard) activeCard.classList.add('active');
 
       if (zona.latitude && zona.longitude) {
         map.flyTo([parseFloat(zona.latitude), parseFloat(zona.longitude)], 17, { duration: 1.5 });
       }
 
-      const isColiseo = zona.name.toLowerCase().includes('coliseo');
-      document.getElementById('simulation-controls').style.display = isColiseo ? 'flex' : 'none';
+      document.getElementById('simulation-controls').style.display = 'flex';
 
-      cargarCeldas(zona.name);
-      cargarRecaudo(zona.name);
+      cargarCeldas(zona.id);
+      cargarRecaudo();
 
       if (intervalId) clearInterval(intervalId);
       intervalId = setInterval(() => {
-        cargarCeldas(zona.name);
-        cargarRecaudo(zona.name);
+        cargarCeldas(zona.id);
+        cargarRecaudo();
       }, 3000);
     }
 
-    // Consultar recaudo acumulado por zona
-    async function cargarRecaudo(nombreZona) {
+    // Consultar recaudo general acumulado desde el endpoint de métricas
+    async function cargarRecaudo() {
       try {
-        const res = await fetch(`${API_URL}/zones/${nombreZona}/revenue`);
+        const res = await fetch(`${API_URL}/admin/metrics`);
         if (!res.ok) return;
         const data = await res.json();
-        document.getElementById('total-revenue').innerText = `$${parseInt(data.total_revenue || 0).toLocaleString('es-CO')} COP`;
-        document.getElementById('total-sessions').innerText = data.total_sessions || 0;
+        document.getElementById('total-revenue').innerText = `$${parseInt(data.revenue.day || 0).toLocaleString('es-CO')} COP`;
       } catch (err) {
         console.error('Error al cargar recaudo:', err);
       }
     }
 
-    // Consultar celdas de la zona
-    async function cargarCeldas(nombreZona) {
+    // Consultar celdas de la zona usando su ID
+    async function cargarCeldas(zoneId) {
       try {
-        const res = await fetch(`${API_URL}/zones/${nombreZona}/spots`);
+        const res = await fetch(`${API_URL}/zones/${zoneId}/spots`);
         celdasCache = await res.json();
         
         const titleElement = document.getElementById('selected-zone-title');
 
         if (!Array.isArray(celdasCache) || celdasCache.length === 0) {
-          titleElement.innerText = `Celdas - ${nombreZona} (Sin celdas registradas)`;
+          titleElement.innerText = `Celdas - ${zonaActual.name} (Sin celdas registradas)`;
           document.getElementById('spots-container').innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">Esta zona no tiene celdas registradas aún.</p>';
           return;
         }
 
         const ocupadas = celdasCache.filter(s => s.status === 'occupied').length;
         const libres = celdasCache.length - ocupadas;
-        titleElement.innerText = `Celdas - ${nombreZona} (${libres} Libres / ${ocupadas} Ocupadas)`;
+        titleElement.innerText = `Celdas - ${zonaActual.name} (${libres} Libres / ${ocupadas} Ocupadas)`;
 
         renderizarCeldas();
       } catch (err) {
@@ -276,6 +331,43 @@
       document.getElementById('new-spot-number').value = '';
     }
 
+    // Modal para Login Administrador
+    function abrirModalLogin() {
+      document.getElementById('modal-login').style.display = 'flex';
+    }
+
+    function cerrarModalLogin() {
+      document.getElementById('modal-login').style.display = 'none';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    }
+
+    async function iniciarSesion() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      if (!email || !password) return alert("Ingresa tus credenciales.");
+
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          window.location.href = 'admin.html';
+        } else {
+          alert(data.error || 'Credenciales inválidas');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Error al conectar con el servidor de autenticación');
+      }
+    }
+
     async function guardarNuevaCelda() {
       const spotNumber = document.getElementById('new-spot-number').value.trim();
       if (!spotNumber) return alert("Ingresa un número de celda");
@@ -288,7 +380,7 @@
         });
         if (res.ok) {
           cerrarModal();
-          cargarCeldas(zonaActual.name);
+          cargarCeldas(zonaActual.id);
         } else {
           alert("Error al guardar la celda");
         }
@@ -297,28 +389,41 @@
       }
     }
 
+    // Simulación mediante Ingesta de Eventos de la IA
     async function simularOcupacion() {
-      if (celdasCache.length > 0) {
-        await fetch(`${API_URL}/spots/occupy`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ spot_id: celdasCache[0].id, license_plate: 'MZL-999' })
-        });
-        cargarCeldas(zonaActual.name);
-        cargarRecaudo(zonaActual.name);
-      }
+      if (!zonaActual || celdasCache.length === 0) return alert("No hay celdas disponibles para simular");
+      const celdaDisponible = celdasCache.find(s => s.status === 'available') || celdasCache[0];
+
+      await fetch(`${API_URL}/ai/event`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ 
+          zone_name: zonaActual.name, 
+          spot_number: celdaDisponible.spot_number, 
+          license_plate: 'MZL-999', 
+          action: 'OCCUPY' 
+        })
+      });
+      cargarCeldas(zonaActual.id);
+      cargarRecaudo();
     }
 
     async function simularLiberacion() {
-      if (celdasCache.length > 0) {
-        await fetch(`${API_URL}/spots/release`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ spot_id: celdasCache[0].id })
-        });
-        cargarCeldas(zonaActual.name);
-        cargarRecaudo(zonaActual.name);
-      }
+      if (!zonaActual || celdasCache.length === 0) return alert("No hay celdas para simular");
+      const celdaOcupada = celdasCache.find(s => s.status === 'occupied') || celdasCache[0];
+
+      await fetch(`${API_URL}/ai/event`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ 
+          zone_name: zonaActual.name, 
+          spot_number: celdaOcupada.spot_number, 
+          license_plate: celdaOcupada.current_plate || 'MZL-999', 
+          action: 'VACATE' 
+        })
+      });
+      cargarCeldas(zonaActual.id);
+      cargarRecaudo();
     }
 
     // Inicialización

@@ -1,184 +1,499 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
-
-// Agregamos el módulo de autenticación
-const authRoutes = require('./auth');
+const path = require('path');
+const crypto = require('crypto');
+const db = require('./db');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'zonas_azules_db',
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT || 5432,
-});
+// ==========================================
+// SERVIR ARCHIVOS ESTÁTICOS Y RUTA FRONTEND
+// ==========================================
+// Se calcula dinámicamente la ruta absoluta hacia /apps/frontend
+const frontendPath = path.resolve(__dirname, '../frontend');
 
-// Middleware para rutas de Autenticación (Login / Registro / JWT)
-app.use('/api/auth', authRoutes);
+app.use(express.static(frontendPath));
+app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 
-// Tarifa oficial: $3.900 COP / Hora (calculada por minuto)
-const TARIFA_POR_MINUTO = 3900 / 60; 
+// ==========================================
+// RUTAS DE NAVEGACIÓN Y ARCHIVOS HTML
+// ==========================================
 
-// 1. Obtener todas las zonas de parqueo
-app.get('/api/zones', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM zones ORDER BY id ASC;');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+// RUTA RAÍZ: REDIRECCIÓN INTELIGENTE
+app.get('/', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|wv|Mobile/i.test(userAgent);
+
+  if (isMobile) {
+    return res.sendFile(path.join(frontendPath, 'mobile.html'));
   }
+
+  return res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-// 2. Obtener las celdas con placa activa
-app.get('/api/zones/:identifier/spots', async (req, res) => {
-  const { identifier } = req.params;
+// Ruta explícita para la vista de conductor (user.html)
+app.get('/user', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'user.html'));
+});
+
+app.get('/user.html', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'user.html'));
+});
+
+// Ruta explícita para la vista móvil
+app.get('/mobile', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'mobile.html'));
+});
+
+app.get('/mobile.html', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'mobile.html'));
+});
+
+// Ruta explícita para el dashboard de administración
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ==========================================
+// RUTA DIRECTA DE DESCARGA APK
+// ==========================================
+app.get('/api/download/apk', (req, res) => {
+  const apkPath = path.join(__dirname, 'downloads', 'ZonasAzules.apk');
+  res.download(apkPath, 'ZonasAzules.apk', (err) => {
+    if (err) {
+      console.error('Error al descargar el archivo APK:', err);
+      if (!res.headersSent) {
+        res.status(404).json({ error: 'El archivo ZonasAzules.apk no se encuentra disponible.' });
+      }
+    }
+  });
+});
+
+// ==========================================
+// 1. RUTA: AUTENTICACIÓN / LOGIN
+// ==========================================
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Correo y contraseña son requeridos.' });
+  }
+
   try {
-    const result = await pool.query(
-      `SELECT s.*, ps.license_plate AS current_plate 
-       FROM parking_spots s
-       JOIN zones z ON s.zone_id = z.id
-       LEFT JOIN parking_sessions ps ON ps.spot_id = s.id AND ps.status = 'active'
-       WHERE z.id::text = $1 OR LOWER(z.name) LIKE LOWER($2)
-       ORDER BY s.spot_number ASC;`,
-      [identifier, `%${identifier}%`]
+    const result = await db.query(
+      `SELECT u.id, u.name, u.email, u.password_hash, r.name AS role 
+       FROM users u 
+       JOIN roles r ON u.role_id = r.id 
+       WHERE u.email = $1`,
+      [email.toLowerCase().trim()]
     );
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// 3. Endpoint: Ocupar celda
-app.post('/api/spots/occupy', async (req, res) => {
-  const { spot_id, license_plate } = req.body;
-  try {
-    await pool.query("UPDATE parking_spots SET status = 'occupied' WHERE id = $1;", [spot_id]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas.' });
+    }
 
-    const session = await pool.query(
-      "INSERT INTO parking_sessions (spot_id, license_plate, status) VALUES ($1, $2, 'active') RETURNING *;",
-      [spot_id, license_plate]
-    );
+    const user = result.rows[0];
 
-    res.json({ message: 'Celda ocupada con exito', session: session.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    if (user.password_hash !== password) {
+      return res.status(401).json({ error: 'Credenciales inválidas.' });
+    }
 
-// 4. Endpoint: Liberar celda y liquidar a $3.900 COP / hora
-app.post('/api/spots/release', async (req, res) => {
-  const { spot_id } = req.body;
-  try {
-    await pool.query("UPDATE parking_spots SET status = 'available' WHERE id = $1;", [spot_id]);
-
-    // Calcula minutos transcurridos e impone una tarifa minima de $3.900 si fue menos de una hora
-    const session = await pool.query(
-      `UPDATE parking_sessions 
-       SET exit_time = CURRENT_TIMESTAMP, 
-           status = 'completed',
-           total_amount = GREATEST(3900.00, ROUND((EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - entry_time))/3600) * 3900.00, 2))
-       WHERE spot_id = $1 AND status = 'active'
-       RETURNING *;`,
-      [spot_id]
-    );
-
-    res.json({ message: 'Celda liberada con exito', session: session.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 5. Endpoint: Crear nueva celda
-app.post('/api/spots', async (req, res) => {
-  const { zone_id, spot_number } = req.body;
-  try {
-    const result = await pool.query(
-      "INSERT INTO parking_spots (zone_id, spot_number, status) VALUES ($1, $2, 'available') RETURNING *;",
-      [zone_id, spot_number]
-    );
-    res.json({ message: 'Celda creada con exito', spot: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 6. Endpoint: Recaudo acumulado por zona
-app.get('/api/zones/:identifier/revenue', async (req, res) => {
-  const { identifier } = req.params;
-  try {
-    const result = await pool.query(
-      `SELECT COALESCE(SUM(ps.total_amount), 0) AS total_revenue, COUNT(ps.id) AS total_sessions
-       FROM parking_sessions ps
-       JOIN parking_spots s ON ps.spot_id = s.id
-       JOIN zones z ON s.zone_id = z.id
-       WHERE (z.id::text = $1 OR LOWER(z.name) LIKE LOWER($2)) AND ps.status = 'completed';`,
-      [identifier, `%${identifier}%`]
-    );
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 7. Endpoint: Métricas Consolidadas para Dashboard Admin (Día, Mes, Año y Ocupación)
-app.get('/api/admin/metrics', async (req, res) => {
-  try {
-    // Recaudo Día
-    const revenueToday = await pool.query(`
-      SELECT COALESCE(SUM(total_amount), 0) AS total 
-      FROM parking_sessions 
-      WHERE status = 'completed' AND DATE(exit_time) = CURRENT_DATE;
-    `);
-
-    // Recaudo Mes
-    const revenueMonth = await pool.query(`
-      SELECT COALESCE(SUM(total_amount), 0) AS total 
-      FROM parking_sessions 
-      WHERE status = 'completed' AND DATE_TRUNC('month', exit_time) = DATE_TRUNC('month', CURRENT_DATE);
-    `);
-
-    // Recaudo Año
-    const revenueYear = await pool.query(`
-      SELECT COALESCE(SUM(total_amount), 0) AS total 
-      FROM parking_sessions 
-      WHERE status = 'completed' AND DATE_TRUNC('year', exit_time) = DATE_TRUNC('year', CURRENT_DATE);
-    `);
-
-    // % Ocupación Actual
-    const occupancy = await pool.query(`
-      SELECT 
-        COUNT(*) AS total_spots,
-        COUNT(CASE WHEN status = 'occupied' THEN 1 END) AS occupied_spots
-      FROM parking_spots;
-    `);
-
-    const total = parseInt(occupancy.rows[0].total_spots) || 1;
-    const occupied = parseInt(occupancy.rows[0].occupied_spots) || 0;
-    const occupancyRate = ((occupied / total) * 100).toFixed(1);
-
-    res.json({
-      revenue: {
-        day: parseFloat(revenueToday.rows[0].total),
-        month: parseFloat(revenueMonth.rows[0].total),
-        year: parseFloat(revenueYear.rows[0].total)
-      },
-      occupancy: {
-        rate: occupancyRate,
-        occupied,
-        total
+    return res.json({
+      message: 'Inicio de sesión exitoso',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
       }
     });
+
+  } catch (err) {
+    console.error('Error en autenticación:', err);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+});
+
+// ==========================================
+// 2. RUTAS: EVENTOS DE VISIÓN-AI
+// ==========================================
+app.post('/api/ai/event', async (req, res) => {
+  const { zone_name, spot_number, license_plate, action } = req.body;
+
+  if (!zone_name || !spot_number || !action) {
+    return res.status(400).json({ error: 'Faltan parámetros obligatorios en el evento IA.' });
+  }
+
+  const cleanPlate = license_plate ? license_plate.toUpperCase().trim() : null;
+
+  try {
+    const zoneRes = await db.query('SELECT id FROM zones WHERE name = $1', [zone_name]);
+    if (zoneRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Zona no encontrada.' });
+    }
+    const zoneId = zoneRes.rows[0].id;
+
+    const spotRes = await db.query(
+      'SELECT id FROM spots WHERE zone_id = $1 AND spot_number = $2',
+      [zoneId, spot_number]
+    );
+
+    if (spotRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Celda no encontrada.' });
+    }
+    const spotId = spotRes.rows[0].id;
+
+    const newStatus = action === 'OCCUPY' ? 'occupied' : 'available';
+    const plateToSave = action === 'OCCUPY' ? cleanPlate : null;
+
+    await db.query(
+      `UPDATE spots 
+       SET status = $1, current_plate = $2, updated_at = NOW() 
+       WHERE id = $3`,
+      [newStatus, plateToSave, spotId]
+    );
+
+    await db.query(
+      `INSERT INTO occupancy_history (spot_id, action, license_plate) 
+       VALUES ($1, $2, $3)`,
+      [spotId, action, cleanPlate]
+    );
+
+    return res.json({
+      message: `Evento ${action} guardado en BD exitosamente.`,
+      spot_number,
+      status: newStatus,
+      license_plate: cleanPlate
+    });
+
+  } catch (err) {
+    console.error('Error procesando evento IA:', err);
+    return res.status(500).json({ error: 'Error interno en el servidor.' });
+  }
+});
+
+// ==========================================
+// 3. RUTA: CONSULTAR COBRO POR PLACA
+// ==========================================
+app.get('/api/driver/check-fee/:plate', async (req, res) => {
+  const cleanPlate = req.params.plate.toUpperCase().trim();
+
+  try {
+    const spotRes = await db.query(
+      `SELECT s.id AS spot_id, s.spot_number, z.name AS zone_name, z.base_rate, s.updated_at
+       FROM spots s
+       JOIN zones z ON s.zone_id = z.id
+       WHERE UPPER(s.current_plate) = $1 AND s.status = 'occupied'`,
+      [cleanPlate]
+    );
+
+    if (spotRes.rows.length === 0) {
+      return res.status(404).json({ error: 'No se encontró ningún vehículo activo estacionado con esa placa.' });
+    }
+
+    const activeSpot = spotRes.rows[0];
+
+    const startTime = new Date(activeSpot.updated_at);
+    const currentTime = new Date();
+    const diffInMilliseconds = currentTime - startTime;
+    const diffInMinutes = Math.max(1, Math.ceil(diffInMilliseconds / (1000 * 60)));
+    
+    const hoursToCharge = Math.max(1, Math.ceil(diffInMinutes / 60));
+    const baseRate = parseFloat(activeSpot.base_rate) || 3900;
+    const totalAmount = hoursToCharge * baseRate;
+
+    return res.json({
+      spot_id: activeSpot.spot_id,
+      spot_number: activeSpot.spot_number,
+      zone_name: activeSpot.zone_name,
+      parked_at: startTime,
+      minutes_elapsed: diffInMinutes,
+      amount_to_pay: totalAmount,
+      currency: 'COP'
+    });
+
+  } catch (err) {
+    console.error('Error al consultar cobro por placa:', err);
+    return res.status(500).json({ error: 'Error interno del servidor.' });
+  }
+});
+
+// ==========================================
+// 4. RUTA: CONSULTAR COBRO POR CÓDIGO QR / MÓVIL
+// ==========================================
+app.get('/api/mobile/spot-status', async (req, res) => {
+  const { zone_id, spot_number } = req.query;
+
+  if (!zone_id || !spot_number) {
+    return res.status(400).json({ error: 'Se requieren los parámetros zone_id y spot_number.' });
+  }
+
+  try {
+    const result = await db.query(
+      `SELECT s.id AS spot_id, s.spot_number, s.status, s.current_plate, s.updated_at, z.name AS zone_name, z.base_rate 
+       FROM spots s
+       JOIN zones z ON s.zone_id = z.id
+       WHERE s.zone_id = $1 AND s.spot_number = $2`,
+      [zone_id, spot_number]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Celda o zona no encontrada.' });
+    }
+
+    const spot = result.rows[0];
+
+    let feeDetails = null;
+    if (spot.status === 'occupied' && spot.current_plate) {
+      const startTime = new Date(spot.updated_at);
+      const currentTime = new Date();
+      const diffInMinutes = Math.max(1, Math.ceil((currentTime - startTime) / (1000 * 60)));
+      const hoursToCharge = Math.max(1, Math.ceil(diffInMinutes / 60));
+      const baseRate = parseFloat(spot.base_rate) || 3900;
+
+      feeDetails = {
+        parked_at: startTime,
+        minutes_elapsed: diffInMinutes,
+        amount_to_pay: hoursToCharge * baseRate,
+        currency: 'COP'
+      };
+    }
+
+    return res.json({
+      spot: {
+        id: spot.spot_id,
+        number: spot.spot_number,
+        status: spot.status,
+        current_plate: spot.current_plate,
+        zone_name: spot.zone_name
+      },
+      fee: feeDetails
+    });
+
+  } catch (err) {
+    console.error('Error en API móvil spot-status:', err);
+    return res.status(500).json({ error: 'Error interno en el servidor.' });
+  }
+});
+
+// ==========================================
+// 5. RUTA: PROCESAR PAGO Y LIBERAR CELDA
+// ==========================================
+app.post('/api/driver/pay', async (req, res) => {
+  const { spot_id, license_plate, amount, payment_method } = req.body;
+
+  if (!spot_id || !license_plate) {
+    return res.status(400).json({ 
+      error: 'Faltan datos obligatorios para procesar el pago (spot_id o license_plate vacíos).' 
+    });
+  }
+
+  const cleanPlate = license_plate.toUpperCase().trim();
+  const parsedAmount = parseFloat(amount) || 3900;
+  const parsedSpotId = isNaN(spot_id) ? spot_id : parseInt(spot_id, 10);
+
+  const client = await db.getClient();
+
+  try {
+    await client.query('BEGIN');
+
+    const paymentRes = await client.query(
+      `INSERT INTO payments (spot_id, license_plate, amount, payment_method, created_at) 
+       VALUES ($1, $2, $3, $4, NOW()) 
+       RETURNING id, created_at`,
+      [parsedSpotId, cleanPlate, parsedAmount, payment_method || 'PSE']
+    );
+
+    const paymentId = paymentRes.rows[0].id;
+    const paymentDate = paymentRes.rows[0].created_at;
+
+    await client.query(
+      `UPDATE spots 
+       SET status = 'available', current_plate = NULL, updated_at = NOW() 
+       WHERE id = $1`,
+      [parsedSpotId]
+    );
+
+    await client.query(
+      `INSERT INTO occupancy_history (spot_id, action, license_plate) 
+       VALUES ($1, 'VACATE', $2)`,
+      [parsedSpotId, cleanPlate]
+    );
+
+    await client.query('COMMIT');
+
+    return res.json({
+      success: true,
+      payment_id: paymentId,
+      license_plate: cleanPlate,
+      amount: parsedAmount,
+      date: paymentDate,
+      message: '¡Pago procesado con éxito y celda liberada correctamente!'
+    });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error procesando el pago en BD:', err);
+    return res.status(500).json({ 
+      error: 'Error interno al procesar el pago en el servidor.',
+      details: err.message 
+    });
+  } finally {
+    client.release();
+  }
+});
+
+// ==========================================
+// 6. RUTA: REGISTRAR FACTURA ELECTRÓNICA (DIAN) Y RECIBO
+// ==========================================
+app.post('/api/driver/invoice', async (req, res) => {
+  const { payment_id, name, document, email } = req.body;
+
+  const clientName = name || 'Consumidor Final';
+  const clientDocument = document || '222222222222';
+  const clientEmail = email || 'consumidorfinal@dian.gov.co';
+
+  if (!payment_id) {
+    return res.status(400).json({ error: 'El ID del pago (payment_id) es obligatorio para facturar.' });
+  }
+
+  try {
+    const payRes = await db.query('SELECT * FROM payments WHERE id = $1', [payment_id]);
+    
+    let paymentAmount = 3900;
+    let paymentPlate = 'N/A';
+
+    if (payRes.rows.length > 0) {
+      paymentAmount = payRes.rows[0].amount;
+      paymentPlate = payRes.rows[0].license_plate;
+    }
+
+    const invoiceNumber = `FE-ZA-${Date.now().toString().slice(-6)}`;
+    const cufe = crypto
+      .createHash('sha256')
+      .update(`${invoiceNumber}-${paymentAmount}-${clientDocument}`)
+      .digest('hex');
+
+    console.log(`[FACTURA DIAN] Generando Factura ${invoiceNumber} para ${clientName} (${clientDocument}) - Email: ${clientEmail}`);
+
+    return res.json({
+      success: true,
+      invoice: {
+        invoice_number: invoiceNumber,
+        cufe: cufe,
+        customer_name: clientName,
+        customer_document: clientDocument,
+        customer_email: clientEmail,
+        amount: paymentAmount,
+        license_plate: paymentPlate,
+        issue_date: new Date()
+      },
+      message: `Factura electrónica ${invoiceNumber} emitida exitosamente y enviada a ${clientEmail}`
+    });
+
+  } catch (err) {
+    console.error('❌ Error emitiendo factura electrónica:', err);
+    return res.status(500).json({ error: 'Error interno al generar la factura electrónica.' });
+  }
+});
+
+// ==========================================
+// 7. RUTAS: CONSULTAS DE ZONAS Y CELDAS
+// ==========================================
+app.get('/api/zones', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT z.*, COUNT(s.id) AS total_spots 
+      FROM zones z 
+      LEFT JOIN spots s ON z.id = s.zone_id 
+      GROUP BY z.id 
+      ORDER BY z.id ASC
+    `);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-const PORT = process.env.PORT || 3000;
+app.get('/api/zones/:id/spots', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query(
+      'SELECT * FROM spots WHERE zone_id = $1 ORDER BY spot_number ASC',
+      [id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/spots', async (req, res) => {
+  const { zone_id, spot_number } = req.body;
+  if (!zone_id || !spot_number) {
+    return res.status(400).json({ error: 'zone_id y spot_number son obligatorios.' });
+  }
+
+  try {
+    const result = await db.query(
+      `INSERT INTO spots (zone_id, spot_number, status) 
+       VALUES ($1, $2, 'available') 
+       RETURNING *`,
+      [zone_id, spot_number]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error al agregar nueva celda:', err);
+    res.status(500).json({ error: 'Error al agregar la celda.' });
+  }
+});
+
+// ==========================================
+// 8. RUTA: MÉTRICAS DEL DASHBOARD (ADMIN)
+// ==========================================
+app.get('/api/admin/metrics', async (req, res) => {
+  try {
+    const totalSpotsRes = await db.query('SELECT COUNT(*) FROM spots');
+    const occupiedSpotsRes = await db.query("SELECT COUNT(*) FROM spots WHERE status = 'occupied'");
+    
+    const revenueRes = await db.query(`
+      SELECT 
+        COALESCE(SUM(amount) FILTER (WHERE created_at >= CURRENT_DATE), 0) AS day_revenue,
+        COALESCE(SUM(amount) FILTER (WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)), 0) AS month_revenue,
+        COALESCE(SUM(amount) FILTER (WHERE created_at >= DATE_TRUNC('year', CURRENT_DATE)), 0) AS year_revenue
+      FROM payments
+    `);
+
+    const total = parseInt(totalSpotsRes.rows[0].count, 10) || 1;
+    const occupied = parseInt(occupiedSpotsRes.rows[0].count, 10) || 0;
+    const rate = ((occupied / total) * 100).toFixed(1);
+
+    const revenue = revenueRes.rows[0];
+
+    res.json({
+      revenue: { 
+        day: parseFloat(revenue.day_revenue), 
+        month: parseFloat(revenue.month_revenue), 
+        year: parseFloat(revenue.year_revenue) 
+      },
+      occupancy: { rate, occupied, total }
+    });
+  } catch (err) {
+    console.error('Error obteniendo métricas:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutandose en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
 });
