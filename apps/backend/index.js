@@ -14,7 +14,6 @@ app.use(express.json());
 // ==========================================
 // SERVIR ARCHIVOS ESTÁTICOS Y RUTA FRONTEND
 // ==========================================
-// Se calcula dinámicamente la ruta absoluta hacia /apps/frontend
 const frontendPath = path.resolve(__dirname, '../frontend');
 
 app.use(express.static(frontendPath));
@@ -412,7 +411,11 @@ app.post('/api/driver/invoice', async (req, res) => {
 app.get('/api/zones', async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT z.*, COUNT(s.id) AS total_spots 
+      SELECT 
+        z.*, 
+        COUNT(s.id) AS total_spots,
+        COUNT(s.id) FILTER (WHERE s.status = 'occupied') AS occupied_spots,
+        COUNT(s.id) FILTER (WHERE s.status = 'available') AS available_spots
       FROM zones z 
       LEFT JOIN spots s ON z.id = s.zone_id 
       GROUP BY z.id 
@@ -491,6 +494,11 @@ app.get('/api/admin/metrics', async (req, res) => {
     console.error('Error obteniendo métricas:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Fallback para SPA (Single Page Application)
+app.get(/(.*)/, (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Iniciar servidor

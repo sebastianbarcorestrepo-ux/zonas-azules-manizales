@@ -1,1227 +1,791 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Zonas Azules - Manizales</title>
 
-
-
   <!-- Leaflet CSS (Mapa) -->
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<!-- Íconos Futuristas FontAwesome 6 -->
+  <!-- Íconos Futuristas FontAwesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Estilos Globales Extraídos -->
-
   <link rel="stylesheet" href="css/styles.css">
 
-
-
   <!-- Cargar React y ReactDOM -->
-
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-
   <!-- Cargar Babel para interpretar sintaxis JSX en el navegador -->
-
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-
-
   <!-- Google Fonts: Orbitron y Rajdhani para toque Futurista -->
-
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 
-
-
   <style>
-
     /* ESTILOS FUTURISTAS PARA EL HEADER */
-
     header {
-
-      background: rgba(15, 23, 42, 0.45) !important; /* Más translúcido con tono oscuro elegante */
-
+      background: rgba(15, 23, 42, 0.45) !important;
       backdrop-filter: blur(12px) saturate(180%);
-
       -webkit-backdrop-filter: blur(12px) saturate(180%);
-
       border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-
       padding: 12px 24px;
-
       display: flex;
-
       justify-content: space-between;
-
       align-items: center;
-
       position: relative;
-
       z-index: 1000;
-
     }
-
-
 
     .brand {
-
       display: flex;
-
       align-items: center;
-
       gap: 14px;
-
     }
-
-
 
     /* Logo "P" Futurista con Resplandor Neón */
-
     .brand-logo {
-
       width: 44px;
-
       height: 44px;
-
       background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-
       border-radius: 12px;
-
       display: flex;
-
       align-items: center;
-
       justify-content: center;
-
       font-family: 'Orbitron', sans-serif;
-
       font-size: 1.5rem;
-
       font-weight: 900;
-
       color: #ffffff;
-
       box-shadow: 0 0 15px rgba(79, 172, 254, 0.7), inset 0 0 10px rgba(255, 255, 255, 0.5);
-
       border: 1px solid rgba(255, 255, 255, 0.4);
-
       transition: transform 0.3s ease, box-shadow 0.3s ease;
-
+      cursor: pointer;
     }
-
-
 
     .brand-logo:hover {
-
       transform: scale(1.08) rotate(-3deg);
-
       box-shadow: 0 0 25px rgba(0, 242, 254, 0.9), inset 0 0 15px rgba(255, 255, 255, 0.8);
-
     }
-
-
-
-    /* Título Futurista y Llamativo */
 
     .brand-title {
-
       font-family: 'Orbitron', sans-serif;
-
       font-size: 1.35rem;
-
       font-weight: 800;
-
       letter-spacing: 1px;
-
       background: linear-gradient(90deg, #ffffff 0%, #60a5fa 50%, #38bdf8 100%);
-
       -webkit-background-clip: text;
-
       -webkit-text-fill-color: transparent;
-
       text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
-
       margin: 0;
-
     }
-
-
 
     .nav-actions {
-
       display: flex;
-
       gap: 12px;
-
       align-items: center;
-
     }
-
-
-
-    /* Estilos de los Botones con Forma Cyber/Futurista y Cristal */
 
     .btn-nav {
-
       font-family: 'Rajdhani', sans-serif;
-
       font-size: 0.95rem;
-
       font-weight: 700;
-
       padding: 10px 18px;
-
       border-radius: 10px;
-
       text-decoration: none;
-
       display: inline-flex;
-
       align-items: center;
-
       gap: 8px;
-
       border: 1px solid rgba(255, 255, 255, 0.2);
-
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
       backdrop-filter: blur(8px);
-
       -webkit-backdrop-filter: blur(8px);
-
       cursor: pointer;
-
     }
-
-
-
-    /* Botón APK (Violeta Neón) */
 
     .btn-apk {
-
       background: rgba(124, 58, 237, 0.35) !important;
-
       color: #e9d5ff !important;
-
       border-color: rgba(167, 139, 250, 0.5) !important;
-
       box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2);
-
     }
-
     .btn-apk:hover {
-
       background: rgba(124, 58, 237, 0.65) !important;
-
       box-shadow: 0 0 20px rgba(167, 139, 250, 0.6);
-
       transform: translateY(-2px);
-
       color: #ffffff !important;
-
     }
-
-
-
-    /* Botón Pago (Verde Esmeralda Cyber) */
 
     .btn-pay {
-
       background: rgba(16, 185, 129, 0.35) !important;
-
       color: #a7f3d0 !important;
-
       border-color: rgba(52, 211, 153, 0.5) !important;
-
       box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-
     }
-
     .btn-pay:hover {
-
       background: rgba(16, 185, 129, 0.65) !important;
-
       box-shadow: 0 0 20px rgba(52, 211, 153, 0.6);
-
       transform: translateY(-2px);
-
       color: #ffffff !important;
-
     }
-
-
-
-    /* Botón Ingreso (Azul Eléctrico Cyber) */
 
     .btn-login {
-
       background: rgba(14, 165, 233, 0.35) !important;
-
       color: #bae6fd !important;
-
       border-color: rgba(56, 189, 248, 0.5) !important;
-
       box-shadow: 0 4px 15px rgba(14, 165, 233, 0.2);
-
     }
-
     .btn-login:hover {
-
       background: rgba(14, 165, 233, 0.65) !important;
-
       box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
-
       transform: translateY(-2px);
-
       color: #ffffff !important;
-
     }
 
+    /* ESTILOS DE LOS PINES NEÓN EN EL MAPA DE LEAFLET */
+    .custom-neon-pin {
+      background: transparent;
+      border: none;
+    }
+    .neon-marker {
+      width: 26px;
+      height: 26px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .marker-dot {
+      width: 14px;
+      height: 14px;
+      background-color: #00f2fe;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #00f2fe, 0 0 20px #00f2fe;
+      z-index: 2;
+    }
+    .active-neon .marker-dot {
+      background-color: #10b981;
+      box-shadow: 0 0 15px #10b981, 0 0 25px #10b981;
+    }
+    .neon-pulse {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(0, 242, 254, 0.4);
+      animation: pulse-neon 1.8s infinite ease-out;
+      z-index: 1;
+    }
+    .active-neon .neon-pulse {
+      background: rgba(16, 185, 129, 0.5);
+    }
+    @keyframes pulse-neon {
+      0% { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
   </style>
-
 </head>
-
 <body>
 
-
-
   <!-- HEADER NAVEGACIÓN -->
-
   <header>
-
     <div class="brand">
-
-      <div class="brand-logo">P</div>
-
+      <div class="brand-logo" id="btnLogoP" onclick="toggleMenuZonas()" title="Ver sectores principales">P</div>
       <h1 class="brand-title">Zonas Azules Manizales</h1>
-
     </div>
-
     <div class="nav-actions">
-      <!-- BOTÓN DESCARGAR APK MÓVIL -->
       <a href="/api/download/apk" download="ZonasAzules.apk" class="btn-nav btn-apk">
         <i class="fa-solid fa-mobile-screen-button"></i> Descargar App (APK)
       </a>
 
-      <!-- BOTÓN PAGO MÓVIL -->
       <a href="user.html" class="btn-nav btn-pay">
         <i class="fa-solid fa-credit-card"></i> Realizar Pago
       </a>
 
-      <!-- BOTÓN INGRESO SISTEMA -->
       <button class="btn-nav btn-login" onclick="abrirModalLogin()">
         <i class="fa-solid fa-shield-halved"></i> Ingreso Sistema
       </button>
     </div>
-
   </header>
 
-
+  <!-- PANEL LATERAL FLOTANTE DE SECTORES DE MANIZALES -->
+  <aside id="panelZonasIzquierda" class="panel-zonas-lateral">
+    <div class="panel-header">
+      <i class="fa-solid fa-map-location-dot"></i> Sectores
+    </div>
+    <ul class="lista-zonas-lateral">
+      <li data-zone-name="Centro" onclick="seleccionarZonaMenu(this)"><span>Centro</span> <span class="badge-zonas">48 zonas</span></li>
+      <li data-zone-name="El Cable" onclick="seleccionarZonaMenu(this)"><span>El Cable</span> <span class="badge-zonas">20 zonas</span></li>
+      <li data-zone-name="Funerarias" onclick="seleccionarZonaMenu(this)"><span>Funerarias</span> <span class="badge-zonas">17 zonas</span></li>
+      <li data-zone-name="La Estrella" onclick="seleccionarZonaMenu(this)"><span>La Estrella</span> <span class="badge-zonas">14 zonas</span></li>
+      <li data-zone-name="Rosales" onclick="seleccionarZonaMenu(this)"><span>Rosales</span> <span class="badge-zonas">13 zonas</span></li>
+      <li data-zone-name="Milán" onclick="seleccionarZonaMenu(this)"><span>Milán</span> <span class="badge-zonas">9 zonas</span></li>
+      <li data-zone-name="Chipre" onclick="seleccionarZonaMenu(this)"><span>Chipre</span> <span class="badge-zonas">1 zona</span></li>
+      <li data-zone-name="Parque del Agua" onclick="seleccionarZonaMenu(this)"><span>Parque del Agua</span> <span class="badge-zonas">1 zona</span></li>
+    </ul>
+  </aside>
 
   <div class="container">
-
     <!-- Mapa de Manizales -->
-
     <div id="map"></div>
 
-
-
-    <!-- Lista de Zonas Renderizada con React -->
-
+    <!-- Lista de Zonas Traídas de la Base de Datos Renderizada con React -->
     <div id="react-zones-root"></div>
 
-
-
     <!-- Seccion Celdas -->
-
     <div class="spots-section">
-
       <h2 id="selected-zone-title">Selecciona una zona para ver sus celdas</h2>
 
-
-
-      <!-- Tarjeta de Recaudo y Tarifa -->
-
-      <div class="revenue-bar">
-
-        <div>
-
-          🏷️ Tarifa Carros: <span style="color: #ffc107; font-weight: bold;">$3.900 COP / Hora</span>
-
+      <!-- Barra Informativa de Tarifas Públicas -->
+      <div class="tarifas-bar">
+        <div class="tarifa-item tarifa-carro">
+          <div class="icon-wrapper icon-carro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+              <circle cx="7" cy="17" r="2"/>
+              <path d="M9 17h6"/>
+              <circle cx="17" cy="17" r="2"/>
+            </svg>
+          </div>
+          <div class="tarifa-info">
+            <span class="tarifa-label">TARIFA CARROS</span>
+            <span class="tarifa-valor">$3.900 COP <small>/ Hora</small></span>
+          </div>
         </div>
 
-        <div>
-
-          💰 Recaudo Acumulado: <span id="total-revenue" style="color: #28a745; font-size: 1.1rem; font-weight: bold;">$0 COP</span>
-
+        <div class="tarifa-item tarifa-moto">
+          <div class="icon-wrapper icon-moto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="5.5" cy="17.5" r="3.5"/>
+              <circle cx="18.5" cy="17.5" r="3.5"/>
+              <path d="M15 6h2l3 5v6.5"/>
+              <path d="M12 17.5V14l-3-3 4-3 2 3h4"/>
+              <path d="M5.5 17.5 9 11"/>
+            </svg>
+          </div>
+          <div class="tarifa-info">
+            <span class="tarifa-label">TARIFA MOTOS</span>
+            <span class="tarifa-valor">$2.000 COP <small>/ Hora</small></span>
+          </div>
         </div>
-
       </div>
-
-
 
       <!-- Barra de Filtros y Crear Celda -->
-
       <div class="toolbar">
-
         <div class="filter-group">
-
           <button id="btn-filter-all" class="active" onclick="filtrarCeldas('all')">Todas</button>
-
           <button id="btn-filter-free" onclick="filtrarCeldas('available')">Libres</button>
-
           <button id="btn-filter-busy" onclick="filtrarCeldas('occupied')">Ocupadas</button>
-
         </div>
-
         <button class="btn-add" onclick="abrirModalNuevaCelda()">+ Nueva Celda</button>
-
       </div>
-
-
 
       <!-- CONTENEDOR DE CELDAS RENDERIZADO CON REACT -->
-
       <div id="react-spots-root"></div>
 
-
-
+      <!-- PANEL CONTROL / SIMULADOR IA FUTURISTA -->
       <div class="controls" id="simulation-controls" style="display: none;">
-
-        <button class="btn-occupy" onclick="simularOcupacion()">Simular Ocupación (IA)</button>
-
-        <button class="btn-release" onclick="simularLiberacion()">Simular Liberación (IA)</button>
-
+        <div class="ai-simulation-bar">
+          <div class="ai-status-indicator">
+            <span class="pulse-dot"></span>
+            <span class="ai-label"><i class="fa-solid fa-microchip"></i> SIMULADOR VISIÓN IA</span>
+          </div>
+          <div class="ai-actions">
+            <button class="btn-ai-occupy" onclick="simularOcupacion()">
+              <i class="fa-solid fa-car-side"></i> Ocupar (IA)
+            </button>
+            <button class="btn-ai-vacate" onclick="simularLiberacion()">
+              <i class="fa-solid fa-circle-check"></i> Liberar (IA)
+            </button>
+          </div>
+        </div>
       </div>
-
     </div>
-
   </div>
-
-
 
   <!-- Modal para Crear Nueva Celda -->
-
   <div class="modal" id="modal-spot">
-
     <div class="modal-content">
-
       <h3>Agregar Celda</h3>
-
       <p id="modal-zone-name" style="font-weight: bold; color: #007bff;"></p>
-
       <input type="text" id="new-spot-number" placeholder="Ej: COL-05" />
-
       <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-
         <button class="btn-add" onclick="guardarNuevaCelda()">Guardar</button>
-
         <button style="background: #6c757d; color: white;" onclick="cerrarModal()">Cancelar</button>
-
       </div>
-
     </div>
-
   </div>
-
-
 
   <!-- Modal de Ingreso Administrador/Sistema -->
-
   <div class="modal" id="modal-login">
-
     <div class="modal-content">
-
       <h3>Ingreso al Sistema</h3>
-
       <p style="font-size: 0.85rem; color: #666;">Ingresa tus credenciales para acceder al Dashboard de recaudos.</p>
-
       <input type="email" id="login-email" placeholder="Correo electrónico" />
-
       <input type="password" id="login-password" placeholder="Contraseña" />
-
       <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-
         <button class="btn-add" style="background: #007bff;" onclick="iniciarSesion()">Ingresar</button>
-
         <button style="background: #6c757d; color: white;" onclick="cerrarModalLogin()">Cancelar</button>
-
       </div>
-
     </div>
-
   </div>
 
-
-
   <!-- Leaflet JS (Mapa) -->
-
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-
-
   <!-- LÓGICA DE LA APLICACIÓN Y COMPONENTES DE REACT -->
-
   <script type="text/babel">
-
     const API_URL = '/api';
-
     let map;
-
     let zonaActual = null;
-
     let zonasCache = [];
-
     let intervalId = null;
-
     let filtroActual = 'all';
-
     let celdasCache = [];
+    const marcadoresMapa = {};
 
+    // Coordenadas fijas para centrar y colocar pines en sectores del panel izquierdo
+    const coordenadasSectores = {
+      'centro': { lat: 5.0680, lng: -75.5170, name: 'Sector Centro' },
+      'el cable': { lat: 5.0560, lng: -75.4860, name: 'Sector El Cable' },
+      'funerarias': { lat: 5.0630, lng: -75.5010, name: 'Sector Funerarias' },
+      'la estrella': { lat: 5.0540, lng: -75.4890, name: 'Sector La Estrella' },
+      'rosales': { lat: 5.0510, lng: -75.4840, name: 'Sector Rosales' },
+      'milán': { lat: 5.0480, lng: -75.4760, name: 'Sector Milán' },
+      'chipre': { lat: 5.0720, lng: -75.5250, name: 'Sector Chipre' },
+      'parque del agua': { lat: 5.0695, lng: -75.5110, name: 'Sector Parque del Agua' }
+    };
 
+    // Creador de íconos neón futuristas para Leaflet
+    const createNeonIcon = (activa = false) => {
+      const colorClass = activa ? 'active-neon' : '';
+      return L.divIcon({
+        className: 'custom-neon-pin',
+        html: `<div class="neon-marker ${colorClass}">
+                 <div class="neon-pulse"></div>
+                 <span class="marker-dot"></span>
+               </div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+    };
 
     // ==========================================
-
-    // COMPONENTES DE REACT (Mantenemos Zonas y Celdas intactas)
-
+    // COMPONENTES DE REACT
     // ==========================================
-
-   
-
+    
     function TarjetaZona({ zona, esActiva, alSeleccionar }) {
-
-      const estiloTarjeta = {
-
-        background: esActiva
-
-          ? 'rgba(0, 123, 255, 0.45)'
-
-          : 'rgba(255, 255, 255, 0.25)',
-
-        backdropFilter: 'blur(10px)',
-
-        WebkitBackdropFilter: 'blur(10px)',
-
-        border: esActiva
-
-          ? '2px solid rgba(0, 123, 255, 0.8)'
-
-          : '1px solid rgba(255, 255, 255, 0.3)',
-
-        borderRadius: '12px',
-
-        padding: '12px 16px',
-
-        color: '#ffffff',
-
-        cursor: 'pointer',
-
-        transition: 'all 0.3s ease',
-
-        boxShadow: esActiva
-
-          ? '0 6px 20px rgba(0, 123, 255, 0.35)'
-
-          : '0 4px 10px rgba(0,0,0,0.15)',
-
-        transform: esActiva ? 'scale(1.02)' : 'scale(1)'
-
-      };
-
-
-
       return (
-
         <div
-
-          style={estiloTarjeta}
-
           className={`zone-card ${esActiva ? 'active' : ''}`}
-
           onClick={() => alSeleccionar(zona)}
-
         >
-
-          <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 'bold' }}>{zona.name}</h3>
-
-          <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9 }}>{zona.direccion || zona.address || ''}</p>
-
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>{zona.name}</h3>
         </div>
-
       );
-
     }
-
-
 
     function ListaZonas({ zonas, zonaSeleccionada, alSeleccionarZona }) {
-
       if (!zonas || zonas.length === 0) {
-
         return (
-
           <p style={{ textAlign: 'center', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
-
-            Cargando zonas...
-
+            Cargando zonas de la base de datos...
           </p>
-
         );
-
       }
 
-
-
       return (
-
         <div className="zones-grid">
-
           {zonas.map(zona => (
-
             <TarjetaZona
-
               key={zona.id}
-
               zona={zona}
-
               esActiva={zonaSeleccionada && zonaSeleccionada.id === zona.id}
-
               alSeleccionar={alSeleccionarZona}
-
             />
-
           ))}
-
         </div>
-
       );
-
     }
-
-
 
     function CeldaParqueo({ spot_number, status, current_plate }) {
-
       const isOccupied = status === 'occupied';
 
-
-
       const estiloCelda = {
-
         background: isOccupied
-
           ? 'rgba(220, 53, 69, 0.75)'
-
           : 'rgba(40, 167, 69, 0.75)',
-
         backdropFilter: 'blur(8px)',
-
         WebkitBackdropFilter: 'blur(8px)',
-
         borderRadius: '12px',
-
         padding: '16px',
-
         textAlign: 'center',
-
         color: '#ffffff',
-
         border: '1px solid rgba(255, 255, 255, 0.3)',
-
         boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-
         cursor: 'pointer'
-
       };
 
-
-
       return (
-
         <div style={estiloCelda} className="spot-card">
-
           <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', fontWeight: 'bold' }}>{spot_number}</h3>
-
           <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 'bold' }}>
-
             {isOccupied ? 'OCUPADO' : 'LIBRE'}
-
           </p>
-
           {isOccupied && current_plate && (
-
             <div className="plate-tag" style={{ marginTop: '8px', background: 'rgba(0,0,0,0.5)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem' }}>
-
               🚘 {current_plate}
-
             </div>
-
           )}
-
         </div>
-
       );
-
     }
-
-
 
     function GrillaCeldas({ celdas, filtro }) {
-
       const celdasFiltradas = celdas.filter(s => {
-
         if (filtro === 'available') return s.status === 'available';
-
         if (filtro === 'occupied') return s.status === 'occupied';
-
         return true;
-
       });
 
-
-
       if (!celdas || celdas.length === 0) {
-
         return (
-
           <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
-
             Esta zona no tiene celdas registradas aún.
-
           </p>
-
         );
-
       }
-
-
 
       if (celdasFiltradas.length === 0) {
-
         return (
-
           <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
-
             No hay celdas para este filtro.
-
           </p>
-
         );
-
       }
-
-
 
       return (
-
         <div className="grid-spots">
-
           {celdasFiltradas.map(spot => (
-
             <CeldaParqueo
-
               key={spot.id || spot.spot_number}
-
               spot_number={spot.spot_number}
-
               status={spot.status}
-
               current_plate={spot.current_plate}
-
             />
-
           ))}
-
         </div>
-
       );
-
     }
-
-
 
     const reactZonesRoot = ReactDOM.createRoot(document.getElementById('react-zones-root'));
-
     const reactSpotsRoot = ReactDOM.createRoot(document.getElementById('react-spots-root'));
 
-
-
     function actualizarInterfazReact() {
-
       reactZonesRoot.render(
-
         <ListaZonas
-
           zonas={zonasCache}
-
           zonaSeleccionada={zonaActual}
-
           alSeleccionarZona={seleccionarZona}
-
         />
-
       );
-
-
 
       reactSpotsRoot.render(
-
         <GrillaCeldas
-
           celdas={celdasCache}
-
           filtro={filtroActual}
-
         />
-
       );
-
     }
 
-
-
     // ==========================================
-
-    // LÓGICA DE API Y NAVEGACIÓN
-
+    // LÓGICA DE API Y NAVEGACIÓN CON LEAFLET
     // ==========================================
-
-
 
     function initMap() {
-
-      map = L.map('map').setView([5.0689, -75.5174], 14);
-
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-
-        attribution: 'Tiles &copy; Esri'
-
+      map = L.map('map').setView([5.0668, -75.4982], 14);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 18
       }).addTo(map);
 
+      // Renderizar automáticamente los pines de los sectores predefinidos en el mapa
+      Object.keys(coordenadasSectores).forEach(key => {
+        const sector = coordenadasSectores[key];
+        const marker = L.marker([sector.lat, sector.lng], { icon: createNeonIcon(false) }).addTo(map);
+        
+        marker.bindPopup(`
+          <div style="text-align:center; font-family:'Rajdhani', sans-serif;">
+            <strong style="color:#38bdf8; font-size:1.1rem;">${sector.name}</strong><br>
+            <span style="color:#cbd5e1;">Sector de Manizales</span>
+          </div>
+        `);
+
+        marcadoresMapa[key] = { marker, coords: [sector.lat, sector.lng] };
+      });
     }
-
-
 
     async function cargarZonas() {
-
       try {
-
         const res = await fetch(`${API_URL}/zones`);
-
         zonasCache = await res.json();
 
-
-
-        zonasCache.forEach(zona => {
-
-          if (zona.latitude && zona.longitude) {
-
-            const marker = L.marker([parseFloat(zona.latitude), parseFloat(zona.longitude)]).addTo(map);
-
-            marker.bindPopup(`<b>${zona.name}</b><br>${zona.direccion || zona.address || ''}`);
-
-            marker.on('click', () => seleccionarZona(zona));
-
-          }
-
-        });
-
-
-
-        const zonaInicial = zonasCache[0];
-
-        if (zonaInicial) seleccionarZona(zonaInicial);
-
-
-
-      } catch (err) {
-
-        console.error('Error al cargar zonas:', err);
-
-      }
-
-    }
-
-
-
-    function seleccionarZona(zona) {
-
-      zonaActual = zona;
-
-
-
-      if (zona.latitude && zona.longitude) {
-
-        map.flyTo([parseFloat(zona.latitude), parseFloat(zona.longitude)], 17, { duration: 1.5 });
-
-      }
-
-
-
-      document.getElementById('simulation-controls').style.display = 'flex';
-
-
-
-      cargarCeldas(zona.id);
-
-      cargarRecaudo();
-
-      actualizarInterfazReact();
-
-
-
-      if (intervalId) clearInterval(intervalId);
-
-      intervalId = setInterval(() => {
-
-        cargarCeldas(zona.id);
-
-        cargarRecaudo();
-
-      }, 3000);
-
-    }
-
-
-
-    async function cargarRecaudo() {
-
-      try {
-
-        const res = await fetch(`${API_URL}/admin/metrics`);
-
-        if (!res.ok) return;
-
-        const data = await res.json();
-
-        document.getElementById('total-revenue').innerText = `$${parseInt(data.revenue.day || 0).toLocaleString('es-CO')} COP`;
-
-      } catch (err) {
-
-        console.error('Error al cargar recaudo:', err);
-
-      }
-
-    }
-
-
-
-    async function cargarCeldas(zoneId) {
-
-      try {
-
-        const res = await fetch(`${API_URL}/zones/${zoneId}/spots`);
-
-        celdasCache = await res.json();
-
-       
-
-        const titleElement = document.getElementById('selected-zone-title');
-
-
-
-        if (!Array.isArray(celdasCache) || celdasCache.length === 0) {
-
-          titleElement.innerText = `Celdas - ${zonaActual.name} (Sin celdas registradas)`;
-
-          celdasCache = [];
-
-          actualizarInterfazReact();
-
-          return;
-
+        if (Array.isArray(zonasCache)) {
+          zonasCache.forEach(zona => {
+            if (zona.latitude && zona.longitude) {
+              const lat = parseFloat(zona.latitude);
+              const lng = parseFloat(zona.longitude);
+
+              const marker = L.marker([lat, lng], { icon: createNeonIcon(false) }).addTo(map);
+              
+              marker.bindPopup(`
+                <div style="text-align:center; font-family:'Rajdhani', sans-serif;">
+                  <strong style="color:#38bdf8; font-size:1.1rem;">${zona.name}</strong><br>
+                  <span style="color:#cbd5e1;">Zona Azul Registrada</span>
+                </div>
+              `);
+
+              marker.on('click', () => seleccionarZona(zona));
+              marcadoresMapa[`db_${zona.id}`] = { marker, coords: [lat, lng] };
+            }
+          });
+
+          const zonaInicial = zonasCache[0];
+          if (zonaInicial) seleccionarZona(zonaInicial);
         }
 
-
-
-        const ocupadas = celdasCache.filter(s => s.status === 'occupied').length;
-
-        const libres = celdasCache.length - ocupadas;
-
-        titleElement.innerText = `Celdas - ${zonaActual.name} (${libres} Libres / ${ocupadas} Ocupadas)`;
-
-
-
-        actualizarInterfazReact();
-
       } catch (err) {
+        console.error('Error al cargar zonas de la API:', err);
+      }
+    }
 
-        console.error('Error al cargar celdas:', err);
+    function seleccionarZona(zona) {
+      zonaActual = zona;
 
+      // Actualizar los íconos neón en el mapa a estado activo (Verde/Activo)
+      Object.keys(marcadoresMapa).forEach(key => {
+        const esLaZona = (key === `db_${zona.id}`);
+        marcadoresMapa[key].marker.setIcon(createNeonIcon(esLaZona));
+      });
+
+      // Animación de vuelo hacia la zona
+      if (zona.latitude && zona.longitude) {
+        map.flyTo([parseFloat(zona.latitude), parseFloat(zona.longitude)], 16, {
+          duration: 1.2,
+          easeLinearity: 0.25
+        });
+
+        if (marcadoresMapa[`db_${zona.id}`]) {
+          marcadoresMapa[`db_${zona.id}`].marker.openPopup();
+        }
       }
 
-    }
+      document.getElementById('simulation-controls').style.display = 'block';
 
-
-
-    function filtrarCeldas(filtro) {
-
-      filtroActual = filtro;
-
-      document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
-
-      if (filtro === 'all') document.getElementById('btn-filter-all').classList.add('active');
-
-      if (filtro === 'available') document.getElementById('btn-filter-free').classList.add('active');
-
-      if (filtro === 'occupied') document.getElementById('btn-filter-busy').classList.add('active');
-
+      cargarCeldas(zona.id);
       actualizarInterfazReact();
 
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => {
+        cargarCeldas(zona.id);
+      }, 3000);
     }
 
+    async function cargarCeldas(zoneId) {
+      try {
+        const res = await fetch(`${API_URL}/zones/${zoneId}/spots`);
+        celdasCache = await res.json();
+        
+        const titleElement = document.getElementById('selected-zone-title');
 
+        if (!Array.isArray(celdasCache) || celdasCache.length === 0) {
+          titleElement.innerText = `Celdas - ${zonaActual ? zonaActual.name : ''} (Sin celdas registradas)`;
+          celdasCache = [];
+          actualizarInterfazReact();
+          return;
+        }
+
+        const ocupadas = celdasCache.filter(s => s.status === 'occupied').length;
+        const libres = celdasCache.length - ocupadas;
+        titleElement.innerText = `Celdas - ${zonaActual ? zonaActual.name : ''} (${libres} Libres / ${ocupadas} Ocupadas)`;
+
+        actualizarInterfazReact();
+      } catch (err) {
+        console.error('Error al cargar celdas:', err);
+      }
+    }
+
+    function filtrarCeldas(filtro) {
+      filtroActual = filtro;
+      document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
+      if (filtro === 'all') document.getElementById('btn-filter-all').classList.add('active');
+      if (filtro === 'available') document.getElementById('btn-filter-free').classList.add('active');
+      if (filtro === 'occupied') document.getElementById('btn-filter-busy').classList.add('active');
+      actualizarInterfazReact();
+    }
 
     function abrirModalNuevaCelda() {
-
       if (!zonaActual) return alert("Selecciona una zona primero");
-
       document.getElementById('modal-zone-name').innerText = `Zona: ${zonaActual.name}`;
-
       document.getElementById('modal-spot').style.display = 'flex';
-
     }
-
-
 
     function cerrarModal() {
-
       document.getElementById('modal-spot').style.display = 'none';
-
       document.getElementById('new-spot-number').value = '';
-
     }
-
-
 
     function abrirModalLogin() {
-
       document.getElementById('modal-login').style.display = 'flex';
-
     }
-
-
 
     function cerrarModalLogin() {
-
       document.getElementById('modal-login').style.display = 'none';
-
       document.getElementById('login-email').value = '';
-
       document.getElementById('login-password').value = '';
-
     }
 
-
-
     async function iniciarSesion() {
-
       const email = document.getElementById('login-email').value.trim();
-
       const password = document.getElementById('login-password').value.trim();
-
-
 
       if (!email || !password) return alert("Ingresa tus credenciales.");
 
-
-
       try {
-
         const res = await fetch(`${API_URL}/auth/login`, {
-
           method: 'POST',
-
           headers: { 'Content-Type': 'application/json' },
-
           body: JSON.stringify({ email, password })
-
         });
-
-
 
         const data = await res.json();
-
         if (res.ok) {
-
           localStorage.setItem('user', JSON.stringify(data.user));
-
           window.location.href = 'admin.html';
-
         } else {
-
           alert(data.error || 'Credenciales inválidas');
-
         }
-
       } catch (e) {
-
         console.error(e);
-
         alert('Error al conectar con el servidor de autenticación');
-
       }
-
     }
-
-
 
     async function guardarNuevaCelda() {
-
       const spotNumber = document.getElementById('new-spot-number').value.trim();
-
       if (!spotNumber) return alert("Ingresa un número de celda");
 
-
-
       try {
-
         const res = await fetch(`${API_URL}/spots`, {
-
           method: 'POST',
-
           headers: {'Content-Type': 'application/json'},
-
           body: JSON.stringify({ zone_id: zonaActual.id, spot_number: spotNumber })
-
         });
-
         if (res.ok) {
-
           cerrarModal();
-
           cargarCeldas(zonaActual.id);
-
         } else {
-
           alert("Error al guardar la celda");
-
         }
-
       } catch (e) {
-
         console.error(e);
-
       }
-
     }
-
-
 
     async function simularOcupacion() {
-
       if (!zonaActual || celdasCache.length === 0) return alert("No hay celdas disponibles para simular");
-
       const celdaDisponible = celdasCache.find(s => s.status === 'available') || celdasCache[0];
 
-
-
       await fetch(`${API_URL}/ai/event`, {
-
         method: 'POST',
-
         headers: {'Content-Type': 'application/json'},
-
         body: JSON.stringify({
-
           zone_name: zonaActual.name,
-
           spot_number: celdaDisponible.spot_number,
-
           license_plate: 'MZL-999',
-
           action: 'OCCUPY'
-
         })
-
       });
-
       cargarCeldas(zonaActual.id);
-
-      cargarRecaudo();
-
     }
-
-
 
     async function simularLiberacion() {
-
       if (!zonaActual || celdasCache.length === 0) return alert("No hay celdas para simular");
-
       const celdaOcupada = celdasCache.find(s => s.status === 'occupied') || celdasCache[0];
 
-
-
       await fetch(`${API_URL}/ai/event`, {
-
         method: 'POST',
-
         headers: {'Content-Type': 'application/json'},
-
         body: JSON.stringify({
-
           zone_name: zonaActual.name,
-
           spot_number: celdaOcupada.spot_number,
-
           license_plate: celdaOcupada.current_plate || 'MZL-999',
-
           action: 'VACATE'
-
         })
-
       });
-
       cargarCeldas(zonaActual.id);
-
-      cargarRecaudo();
-
     }
 
+    function toggleMenuZonas() {
+      const panel = document.getElementById('panelZonasIzquierda');
+      if (panel) panel.classList.toggle('active');
+    }
 
+    function seleccionarZonaMenu(elemento) {
+      const items = document.querySelectorAll('.lista-zonas-lateral li');
+      items.forEach(item => item.classList.remove('active-zona'));
+      elemento.classList.add('active-zona');
+
+      const nombreSector = (elemento.getAttribute('data-zone-name') || elemento.querySelector('span').innerText.trim()).toLowerCase();
+
+      // Resetear estados de pines
+      Object.keys(marcadoresMapa).forEach(k => {
+        marcadoresMapa[k].marker.setIcon(createNeonIcon(false));
+      });
+
+      // 1. Verificar si coincide con una zona registrada en la BD
+      const zonaEncontrada = zonasCache.find(z => z.name.toLowerCase().includes(nombreSector));
+
+      if (zonaEncontrada) {
+        seleccionarZona(zonaEncontrada);
+      } else if (coordenadasSectores[nombreSector]) {
+        // 2. Si es un sector estático, enfocar y activar su pin de resplandor neón
+        const sector = coordenadasSectores[nombreSector];
+        map.flyTo([sector.lat, sector.lng], 16, {
+          duration: 1.2,
+          easeLinearity: 0.25
+        });
+
+        if (marcadoresMapa[nombreSector]) {
+          marcadoresMapa[nombreSector].marker.setIcon(createNeonIcon(true));
+          marcadoresMapa[nombreSector].marker.openPopup();
+        }
+
+        // Si hay una zona activa en caché, cargar sus celdas
+        if (zonasCache.length > 0) {
+          cargarCeldas(zonasCache[0].id);
+        }
+      }
+    }
 
     window.filtrarCeldas = filtrarCeldas;
-
     window.abrirModalNuevaCelda = abrirModalNuevaCelda;
-
     window.cerrarModal = cerrarModal;
-
     window.abrirModalLogin = abrirModalLogin;
-
     window.cerrarModalLogin = cerrarModalLogin;
-
     window.iniciarSesion = iniciarSesion;
-
     window.guardarNuevaCelda = guardarNuevaCelda;
-
     window.simularOcupacion = simularOcupacion;
-
     window.simularLiberacion = simularLiberacion;
+    window.toggleMenuZonas = toggleMenuZonas;
+    window.seleccionarZonaMenu = seleccionarZonaMenu;
 
-
-
+    // Inicializar Mapa y cargar datos de la API
     initMap();
-
     cargarZonas();
-
   </script>
-
 </body>
-
-</html> 
-
-s
+</html>
