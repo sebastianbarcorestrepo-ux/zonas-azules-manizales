@@ -1,0 +1,375 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap');
+
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  background-color: #0f172a;
+  color: #f8fafc;
+  overflow: hidden;
+}
+
+/* Layout Principal con Grid de 5 columnas */
+.yellow-pages-layout {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.3fr) minmax(160px, 1.3fr) minmax(440px, 2.2fr) minmax(160px, 1.3fr) minmax(160px, 1.3fr);
+  height: 100vh;
+  width: 100vw;
+  gap: 15px;
+  padding: 15px;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+/* Banners Verticales Laterales con Neón Azul */
+.side-column-vertical {
+  height: 100%;
+  background: #1e293b;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(0, 243, 255, 0.4);
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.12), inset 0 0 10px rgba(0, 243, 255, 0.04);
+}
+
+.side-column-vertical img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.side-column-vertical span {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-align: center;
+  padding: 12px;
+}
+
+/* Columna Central */
+.center-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Banners Horizontales */
+.ad-banner-horizontal {
+  width: 100%;
+  max-width: 460px;
+  height: 85px;
+  background: #1e293b;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(0, 243, 255, 0.4);
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.12), inset 0 0 10px rgba(0, 243, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.ad-banner-horizontal img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ad-banner-horizontal span {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-align: center;
+  padding: 10px;
+}
+
+/* Tarjeta Principal Futurista */
+.app-card {
+  background: #1e293b;
+  width: 100%;
+  max-width: 460px;
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 15px rgba(0, 243, 255, 0.05);
+  border: 1px solid rgba(0, 243, 255, 0.4);
+  position: relative;
+  z-index: 10;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+/* Título con degradado automático de blanco a azul neón */
+.futuristic-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #ffffff 0%, #cbd5e1 15%, #38bdf8 60%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin: 0;
+  letter-spacing: 1px;
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  display: block;
+  margin-bottom: 5px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px;
+  background: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+button {
+  width: 100%;
+  background: rgba(2, 132, 199, 0.8);
+  color: white;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 11px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 5px;
+}
+
+button:hover {
+  background: rgba(2, 132, 199, 1);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+}
+
+/* Botón Azul Futurista Traslúcido */
+.btn-futuristic-blue {
+  background: rgba(14, 165, 233, 0.25);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  color: #e0f2fe;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-futuristic-blue:hover {
+  background: rgba(14, 165, 233, 0.45);
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), 0 0 35px rgba(56, 189, 248, 0.3);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Botón Verde Pago - Translúcido con Neón Verde */
+.btn-futuristic-green {
+  background: rgba(34, 197, 94, 0.25);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(74, 222, 128, 0.6);
+  color: #dcfce7;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-futuristic-green:hover {
+  background: rgba(34, 197, 94, 0.45);
+  border-color: rgba(74, 222, 128, 0.9);
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.6), 0 0 35px rgba(74, 222, 128, 0.3);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Botón Cerrar Sesión - Naranja Neón Traslúcido */
+.btn-logout-orange {
+  background: rgba(249, 115, 22, 0.22);
+  backdrop-filter: blur(6px);
+  color: #ffedd5;
+  border: 1px solid rgba(249, 115, 22, 0.6);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.2);
+  width: auto;
+  margin: 0;
+}
+
+.btn-logout-orange:hover {
+  background: rgba(249, 115, 22, 0.42);
+  border-color: rgba(251, 146, 60, 0.9);
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.6), 0 0 35px rgba(249, 115, 22, 0.3);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ticket-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 12px 0;
+  text-align: center;
+}
+
+.amount {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #4ade80;
+  margin-top: 6px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.alert-error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.payment-options {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.payment-option {
+  flex: 1;
+  border: 2px solid #475569;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #0f172a;
+  color: #cbd5e1;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.payment-option.selected {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+/* Factura y Recibo */
+.receipt-card {
+  background: #0f172a;
+  border: 1px dashed #64748b;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 12px 0;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.receipt-header {
+  text-align: center;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.receipt-header h3 {
+  margin: 0 0 4px 0;
+  color: #38bdf8;
+  font-size: 0.95rem;
+}
+
+.receipt-header p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.receipt-row.bold {
+  font-weight: bold;
+  color: #fff;
+  border-top: 1px solid #334155;
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+.badge-approved {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: inline-block;
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.cufe-box {
+  font-size: 0.65rem;
+  word-break: break-all;
+  color: #94a3b8;
+  background: #1e293b;
+  padding: 6px;
+  border-radius: 6px;
+  margin-top: 10px;
+  border: 1px solid #334155;
+}
+
+/* Responsivo */
+@media (max-width: 1100px) {
+  .yellow-pages-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow-y: auto;
+  }
+  .side-column-vertical {
+    display: none;
+  }
+}

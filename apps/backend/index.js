@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
 const db = require('./db');
+const authRoutes = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -78,49 +79,9 @@ app.get('/api/download/apk', (req, res) => {
 });
 
 // ==========================================
-// 1. RUTA: AUTENTICACIÓN / LOGIN
+// 1. RUTAS DE AUTENTICACIÓN (LOGIN Y REGISTRO)
 // ==========================================
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Correo y contraseña son requeridos.' });
-  }
-
-  try {
-    const result = await db.query(
-      `SELECT u.id, u.name, u.email, u.password_hash, r.name AS role 
-       FROM users u 
-       JOIN roles r ON u.role_id = r.id 
-       WHERE u.email = $1`,
-      [email.toLowerCase().trim()]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
-    }
-
-    const user = result.rows[0];
-
-    if (user.password_hash !== password) {
-      return res.status(401).json({ error: 'Credenciales inválidas.' });
-    }
-
-    return res.json({
-      message: 'Inicio de sesión exitoso',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    });
-
-  } catch (err) {
-    console.error('Error en autenticación:', err);
-    return res.status(500).json({ error: 'Error interno del servidor.' });
-  }
-});
+app.use('/api/auth', authRoutes);
 
 // ==========================================
 // 2. RUTAS: EVENTOS DE VISIÓN-AI
@@ -381,6 +342,17 @@ app.post('/api/driver/invoice', async (req, res) => {
       .createHash('sha256')
       .update(`${invoiceNumber}-${paymentAmount}-${clientDocument}`)
       .digest('hex');
+
+    // Registrar en la tabla invoices de PostgreSQL
+    try {
+      await db.query(
+        `INSERT INTO invoices (payment_id, invoice_number, cufe, customer_name, customer_document, customer_email, amount, dian_status, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'issued', NOW())`,
+        [payment_id, invoiceNumber, cufe, clientName, clientDocument, clientEmail, paymentAmount]
+      );
+    } catch (saveErr) {
+      console.warn('Nota: Registro auxiliar en tabla invoices:', saveErr.message);
+    }
 
     console.log(`[FACTURA DIAN] Generando Factura ${invoiceNumber} para ${clientName} (${clientDocument}) - Email: ${clientEmail}`);
 
