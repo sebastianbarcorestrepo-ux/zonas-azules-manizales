@@ -1,0 +1,40 @@
+RESULTADOS DEL RECONOCIMIENTO OCR
+Video: services\vision-ai\media\prueba_placas.mp4
+Duración: 34.43 segundos
+
+LECTURAS POR TIEMPO
+0.50s | NJEIQ | confianza=0.21
+2.00s | MNODIC | confianza=0.34
+7.50s | GTL664 | confianza=0.70
+8.00s | GTL664 | confianza=0.61
+8.50s | GTL664 | confianza=0.70
+21.00s | 20123 | confianza=0.71
+23.50s | 6ET298 | confianza=0.36
+24.00s | GET298 | confianza=0.78
+24.50s | GET298 | confianza=1.00
+25.00s | GET298 | confianza=0.62
+25.50s | GET298 | confianza=0.62
+26.00s | GET298 | confianza=0.59
+26.50s | GET298 | confianza=0.68
+27.00s | GET298 | confianza=0.51
+27.50s | GET298 | confianza=0.64
+28.50s | GET298 | confianza=0.51
+29.00s | GET298 | confianza=0.58
+29.50s | GET298 | confianza=0.49
+30.00s | GET298 | confianza=0.50
+30.50s | IGET298 | confianza=0.40
+31.50s | IGET298 | confianza=0.41
+32.00s | GET298 | confianza=0.51
+32.50s | GET298 | confianza=0.62
+33.00s | GET298 | confianza=0.45
+33.50s | GET298 | confianza=0.88
+34.00s | GET298 | confianza=0.21
+
+FRECUENCIA DE TEXTOS
+GET298: 17
+GTL664: 3
+IGET298: 2
+NJEIQ: 1
+MNODIC: 1
+20123: 1
+6ET298: 1

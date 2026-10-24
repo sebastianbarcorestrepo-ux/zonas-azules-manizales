@@ -778,6 +778,48 @@
     window.cerrarModalLogin = cerrarModalLogin;
     window.iniciarSesion = iniciarSesion;
     window.guardarNuevaCelda = guardarNuevaCelda;
+    async function ejecutarVisionAIVideo() {
+      const btn = document.getElementById('btn-process-video');
+      if (!btn) return;
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analizando Video...';
+
+      try {
+        const zonaNombre = zonaActual ? zonaActual.name : 'Zona Coliseo 2 - Cra 24';
+        const res = await fetch(`${API_URL}/ai/process-video`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zone_name: zonaNombre })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          // Refrescar inmediatamente las celdas en la pantalla
+          if (zonaActual) {
+            await cargarCeldas(zonaActual.id);
+          } else if (zonasCache.length > 0) {
+            await cargarCeldas(zonasCache[0].id);
+          }
+
+          const detalles = (data.detected || []).map(d => 
+            `• Celda #${d.spot}: Placa ${d.plate} (${Math.round((d.confidence || 0.95) * 100)}% conf)`
+          ).join('\n');
+
+          alert(`🚀 ¡Video procesado exitosamente en ${data.duration}s!\n\nVehículos detectados en la vía:\n${detalles}`);
+        } else {
+          alert(data.error || 'No se pudo procesar el video');
+        }
+      } catch (err) {
+        console.error('Error al procesar video IA:', err);
+        alert('Error de conexión al procesar el video.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    window.ejecutarVisionAIVideo = ejecutarVisionAIVideo;
     window.simularOcupacion = simularOcupacion;
     window.simularLiberacion = simularLiberacion;
     window.toggleMenuZonas = toggleMenuZonas;

@@ -3,135 +3,919 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard de Control y Recaudo - Zonas Azules Manizales</title>
+  <title>Control y Recaudo | Zonas Azules Manizales</title>
+  <!-- Importando tipografías Orbitron y Rajdhani -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
-    .header { background: #1a253f; color: white; padding: 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-    .card { background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .card h3 { color: #666; font-size: 13px; text-transform: uppercase; margin: 0 0 10px 0; }
-    .card .value { font-size: 24px; font-weight: bold; color: #2e7d32; }
-    .card .value.blue { color: #1565c0; }
-    .section-title { font-size: 18px; color: #333; margin: 25px 0 15px 0; }
-    table { width: 100%; background: white; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-    th { background: #eef2f5; color: #444; font-size: 13px; }
-    .status-active { color: #2e7d32; font-weight: bold; }
-    
-    /* Cuadrícula de Celdas */
-    .spots-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; margin-top: 15px; }
-    .spot-card { background: white; border-radius: 8px; padding: 15px; text-align: center; border-left: 6px solid #2e7d32; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: all 0.3s ease; }
-    .spot-card.occupied { border-left-color: #c62828; background: #ffebee; }
-    .spot-number { font-size: 16px; font-weight: bold; color: #333; }
-    .spot-status { font-size: 12px; font-weight: bold; margin-top: 5px; }
-    .spot-card.occupied .spot-status { color: #c62828; }
-    .spot-card:not(.occupied) .spot-status { color: #2e7d32; }
-    .plate { font-size: 11px; background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 5px; }
+    :root {
+      --bg:#081426;
+      --sidebar:#091a35;
+      --panel:#0e203b;
+      --panel2:#102641;
+      --border:#1d3c60;
+      --text:#edf5ff;
+      --muted:#92afd1;
+      --blue:#168cff;
+      --cyan:#13c4f5;
+      --green:#20df91;
+      --purple:#a77aff;
+      --yellow:#ffc342;
+      --red:#ff526c;
+    }
+
+    * { box-sizing:border-box; }
+
+    body {
+      margin:0;
+      color:var(--text);
+      background:radial-gradient(ellipse at 75% 0%,#102b50 0%,transparent 43%),var(--bg);
+      font-family:'Rajdhani', sans-serif;
+    }
+
+    button,select { font:inherit; }
+
+    /* Encabezado Cyberpunk / Glassmorphism Pro */
+    .topbar {
+      background: rgba(15, 23, 42, 0.65) !important;
+      backdrop-filter: blur(14px) saturate(180%);
+      -webkit-backdrop-filter: blur(14px) saturate(180%);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #ffffff;
+      box-shadow: 0 0 18px rgba(79, 172, 254, 0.75), inset 0 0 10px rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #ffffff 0%, #60a5fa 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+      margin: 0;
+    }
+
+    .brand-subtitle {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin: 2px 0 0;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .top-status {
+      color: var(--green);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      background: rgba(32, 223, 145, 0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(32, 223, 145, 0.3);
+      box-shadow: 0 0 10px rgba(32, 223, 145, 0.15);
+    }
+
+    .layout {
+      display:grid;
+      grid-template-columns:290px minmax(0,1fr);
+      min-height:calc(100vh - 84px);
+    }
+
+    .sidebar {
+      padding:20px 13px;
+      background:linear-gradient(180deg,var(--sidebar),#07152b);
+      border-right:1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 84px);
+    }
+
+    .sidebar-title {
+      padding:0 12px 15px;color:var(--muted);font-size:12px;
+      font-weight:800;letter-spacing:1px;border-bottom:1px solid var(--border);
+    }
+
+    .zone-menu { 
+      display:grid; 
+      gap:8px; 
+      margin-top:10px; 
+      overflow-y: auto; 
+      flex: 1;
+    }
+
+    .zone-button {
+      display:flex;align-items:center;gap:12px;width:100%;min-height:48px;
+      padding:12px;color:#d9eaff;text-align:left;border:1px solid transparent;
+      border-radius:9px;background:transparent;cursor:pointer;transition:.2s;
+    }
+
+    .zone-button:hover { background:#102b4d;border-color:var(--border); }
+    .zone-button.active {
+      background:linear-gradient(100deg,#087cf0,#1265d6);
+      border-color:#238cff;color:white;
+    }
+
+    .zone-icon { width:22px;flex-shrink:0;text-align:center;font-size:18px; }
+    .zone-label { flex:1;font-size:13px;font-weight:600; }
+    .zone-arrow { font-size:19px; }
+
+    /* Contenedor Inferior del Sidebar (Herramientas y Cerrar Sesión) */
+    .sidebar-footer-actions {
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      gap: 8px;
+    }
+
+    .sidebar-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      color: #d9eaff;
+      text-align: left;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: rgba(14, 32, 59, 0.6);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .sidebar-action-btn:hover {
+      background: #102b4d;
+      border-color: var(--cyan);
+      transform: translateX(3px);
+    }
+
+    .btn-logout {
+      border-color: rgba(255, 82, 108, 0.4);
+      background: rgba(255, 82, 108, 0.1);
+      color: #fecdd3;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 82, 108, 0.25);
+      border-color: var(--red);
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(255, 82, 108, 0.3);
+    }
+
+    main { min-width:0;padding:25px; overflow-y: auto; }
+
+    .page-heading {
+      display:flex;align-items:center;justify-content:space-between;
+      gap:15px;margin-bottom:19px;
+    }
+
+    .page-heading h2 { margin:0;font-size:20px; font-family: 'Orbitron', sans-serif; }
+    .page-heading p { margin:5px 0 0;color:var(--muted);font-size:12px; }
+
+    .view-label {
+      padding:7px 11px;color:#b9dcff;border:1px solid var(--border);
+      border-radius:20px;font-size:11px;white-space:nowrap;
+    }
+
+    .metrics {
+      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;
+    }
+
+    .metric {
+      --accent:var(--green);
+      --tint:rgba(32,223,145,.12);
+      position:relative;min-width:0;overflow:hidden;padding:19px;
+      background:linear-gradient(145deg,#102541,#0c1b32);
+      border:1px solid var(--border);border-radius:13px;
+    }
+
+    .metric::after {
+      content:"";position:absolute;top:-36px;right:-30px;width:95px;height:95px;
+      background:var(--tint);border-radius:50%;pointer-events:none;
+    }
+
+    .metric.month { --accent:var(--cyan);--tint:rgba(19,196,245,.12); }
+    .metric.year { --accent:var(--purple);--tint:rgba(167,122,255,.14); }
+    .metric.occupancy { --accent:var(--yellow);--tint:rgba(255,195,66,.12); }
+
+    .metric-label {
+      position:relative;z-index:1;color:#bfd6f4;font-size:11px;
+      font-weight:700;text-transform:uppercase;
+    }
+
+    .metric-value {
+      position:relative;z-index:1;margin-top:18px;color:var(--accent);
+      font-size:clamp(19px,2vw,27px);font-weight:800;overflow-wrap:anywhere;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .metric-caption { margin-top:8px;color:var(--muted);font-size:11px; }
+
+    .zone-section {
+      margin-top:23px;padding:18px;background:rgba(9,27,51,.75);
+      border:1px solid var(--border);border-radius:14px;
+    }
+
+    .zone-heading {
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;margin-bottom:17px;
+    }
+
+    .zone-heading h2 { margin:0;font-size:20px; font-family: 'Orbitron', sans-serif; }
+    .zone-heading p { margin:5px 0 0;color:var(--muted);font-size:12px; }
+    .filters { display:flex;align-items:center;gap:8px; }
+
+    .filters select {
+      max-width:180px;padding:9px;color:var(--text);
+      background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    }
+
+    .charts {
+      display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;
+    }
+
+    .chart-card {
+      min-width:0;padding:16px;background:linear-gradient(150deg,#0e2340,#0a1a30);
+      border:1px solid #1c416a;border-radius:12px;
+    }
+
+    .chart-card h3 { margin:0 0 5px;font-size:14px; font-family: 'Orbitron', sans-serif; }
+    .chart-card p { margin:0 0 15px;color:var(--muted);font-size:11px; }
+    .chart-container { position:relative;height:245px; }
+
+    .section-title { margin:25px 0 12px;font-size:16px; font-family: 'Orbitron', sans-serif; }
+
+    .spots-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(48px,1fr));
+      gap:14px;
+      padding:22px;
+      min-height:100px;
+      background:linear-gradient(145deg,#0e203b,#09182d);
+      border-radius: 12px;
+    }
+
+    .spot-dot {
+      width:46px;height:46px;
+      display:flex;align-items:center;justify-content:center;
+      justify-self:center;
+      border-radius:50%;
+      font-size:14px;
+      font-weight:800;
+      font-family: 'Orbitron', sans-serif;
+      cursor:pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .spot-dot:hover {
+      transform: translateY(-3px) scale(1.1);
+    }
+
+    .spot-dot.available {
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      border: 1px solid #34d399;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.45), inset 0 0 10px rgba(255, 255, 255, 0.35);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .spot-dot.occupied {
+      background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+      border: 1px solid #fb7185;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(244, 63, 94, 0.45), inset 0 0 10px rgba(255, 255, 255, 0.35);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .spots-legend {
+      display:flex;flex-wrap:wrap;gap:18px;padding:12px 16px;
+      color:var(--muted);font-size:12px;border-top:1px solid var(--border);
+      background:#0b1b31;
+    }
+
+    .legend-item { display:flex;align-items:center;gap:7px; }
+    .legend-dot { width:12px;height:12px;display:inline-block;border-radius:50%; }
+    .legend-dot.available { background:#10b981; box-shadow: 0 0 8px rgba(16,185,129,0.6); }
+    .legend-dot.occupied { background:#f43f5e; box-shadow: 0 0 8px rgba(244,63,94,0.6); }
+
+    .spots-empty {
+      grid-column:1/-1;padding:14px 0;color:var(--muted);
+      font-size:12px;line-height:1.6;
+    }
+
+    .message {
+      margin-bottom:14px;padding:15px;color:var(--muted);
+      background:#0c2038;border:1px dashed var(--border);
+      border-radius:10px;font-size:12px;
+    }
+
+    /* Estilos del Modal de Asignación de Usuarios */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal-content {
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      width: 90%;
+      max-width: 420px;
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 0 50px rgba(0, 243, 255, 0.35), inset 0 0 20px rgba(0, 243, 255, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.6);
+      color: #f8fafc;
+      font-family: 'Rajdhani', sans-serif;
+      text-align: left;
+    }
+
+    .modal-content h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: #38bdf8;
+      font-size: 1.3rem;
+      margin-top: 0;
+      margin-bottom: 8px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .modal-content p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .modal-content input, .modal-content select {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(71, 85, 105, 0.8);
+      border-radius: 10px;
+      font-size: 1rem;
+      color: #fff;
+      outline: none;
+      margin-bottom: 14px;
+      box-sizing: border-box;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 18px;
+    }
+
+    .btn-modal-primary {
+      background: rgba(14, 165, 233, 0.3);
+      border: 1px solid rgba(56, 189, 248, 0.7);
+      color: #e0f2fe;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+      transition: 0.3s;
+    }
+    .btn-modal-primary:hover {
+      background: rgba(14, 165, 233, 0.6);
+      color: #fff;
+    }
+
+    .btn-modal-secondary {
+      background: rgba(100, 116, 139, 0.25);
+      border: 1px solid rgba(100, 116, 139, 0.5);
+      color: #cbd5e1;
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+      transition: 0.3s;
+    }
+    .btn-modal-secondary:hover {
+      background: rgba(100, 116, 139, 0.5);
+      color: #fff;
+    }
+
+    footer {
+      display:flex;justify-content:space-between;flex-wrap:wrap;
+      gap:10px;padding:22px 2px 5px;color:var(--muted);font-size:11px;
+    }
+
+    .mobile-menu {
+      display:none;padding:9px 12px;color:white;background:#12345a;
+      border:1px solid var(--border);border-radius:8px;cursor:pointer;
+    }
+
+    @media (max-width:1150px) {
+      .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .charts { grid-template-columns:1fr; }
+      .chart-container { height:280px; }
+    }
+
+    @media (max-width:760px) {
+      .topbar { min-height:75px;padding:13px 16px; }
+      .layout { grid-template-columns:1fr; }
+      .mobile-menu { display:block; }
+      .sidebar { display:none;border-right:0;border-bottom:1px solid var(--border); height: auto; }
+      .sidebar.open { display:flex; }
+      main { padding:16px; }
+    }
   </style>
 </head>
+
 <body>
+  <!-- Encabezado Estilizado Cyberpunk -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div>
+        <h1 class="brand-title">Control y Recaudo</h1>
+        <p class="brand-subtitle">Zonas Azules · Manizales</p>
+      </div>
+    </div>
+    <div class="top-status"><span>●</span> MONITOREO ACTIVO</div>
+  </header>
 
-  <div class="header">
-    <h2>📊 Dashboard de Control y Recaudo</h2>
-    <span>Zonas Azules Manizales</span>
+  <div class="layout">
+    <!-- Menú Lateral con Zonas y Botones de Herramientas / Cerrar Sesión -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title">MENÚ DE ZONAS</div>
+
+      <nav class="zone-menu" id="zone-menu">
+        <button class="zone-button active" data-zone="all">
+          <span class="zone-icon">▦</span>
+          <span class="zone-label">Todas las zonas</span>
+          <span class="zone-arrow">›</span>
+        </button>
+      </nav>
+
+      <!-- Botones de Herramientas y Cerrar Sesión en la parte inferior del panel -->
+      <div class="sidebar-footer-actions">
+        <button class="sidebar-action-btn" id="btn-tools" type="button">
+          <span class="zone-icon">⚙️</span>
+          <span class="zone-label">Herramientas / Usuarios</span>
+        </button>
+        <button class="sidebar-action-btn btn-logout" id="btn-logout" type="button">
+          <span class="zone-icon">🚪</span>
+          <span class="zone-label">Cerrar Sesión</span>
+        </button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="page-heading">
+        <div>
+          <h2 id="page-main-title">Resumen general</h2>
+          <p id="page-main-subtitle">Indicadores consolidados de todas las Zonas Azules</p>
+        </div>
+        <button class="mobile-menu" id="mobile-menu" type="button">
+          ☰ Menú de zonas
+        </button>
+        <span class="view-label" id="connection-status">Conectando al servidor…</span>
+      </div>
+
+      <!-- Tarjetas Superiores Dinámicas -->
+      <section class="metrics" aria-label="Indicadores">
+        <article class="metric">
+          <div class="metric-label" id="label-metric-day">Recaudo hoy · General</div>
+          <div class="metric-value" id="global-day">$0 COP</div>
+          <div class="metric-caption" id="caption-metric-day">Total de todas las zonas</div>
+        </article>
+
+        <article class="metric month">
+          <div class="metric-label" id="label-metric-month">Recaudo del mes · General</div>
+          <div class="metric-value" id="global-month">$0 COP</div>
+          <div class="metric-caption" id="caption-metric-month">Acumulado mensual global</div>
+        </article>
+
+        <article class="metric year">
+          <div class="metric-label" id="label-metric-year">Recaudo del año · General</div>
+          <div class="metric-value" id="global-year">$0 COP</div>
+          <div class="metric-caption" id="caption-metric-year">Acumulado anual global</div>
+        </article>
+
+        <article class="metric occupancy">
+          <div class="metric-label" id="label-metric-occupancy">Ocupación · General</div>
+          <div class="metric-value" id="global-occupancy">0%</div>
+          <div class="metric-caption" id="caption-metric-occupancy">Ocupación total del sistema</div>
+        </article>
+      </section>
+
+      <section class="zone-section">
+        <div class="zone-heading">
+          <div>
+            <h2 id="selected-zone-title">Todas las zonas</h2>
+            <p id="selected-zone-subtitle">Vista general de la operación completa</p>
+          </div>
+
+          <div class="filters">
+            <select id="period-filter" aria-label="Periodo de gráficas">
+              <option value="7">Últimos 7 días</option>
+              <option value="30">Últimos 30 días</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="zone-message" class="message" hidden></div>
+
+        <div class="charts">
+          <article class="chart-card">
+            <h3>Recaudo diario</h3>
+            <p>Ingresos por día</p>
+            <div class="chart-container">
+              <canvas id="daily-chart" aria-label="Gráfica de recaudo diario"></canvas>
+            </div>
+          </article>
+
+          <article class="chart-card">
+            <h3>Recaudo mensual</h3>
+            <p>Ingresos por mes</p>
+            <div class="chart-container">
+              <canvas id="monthly-chart" aria-label="Gráfica de recaudo mensual"></canvas>
+            </div>
+          </article>
+
+          <article class="chart-card">
+            <h3>Recaudo anual</h3>
+            <p>Ingresos por año</p>
+            <div class="chart-container">
+              <canvas id="yearly-chart" aria-label="Gráfica de recaudo anual"></canvas>
+            </div>
+          </article>
+        </div>
+
+        <h3 class="section-title">Estado de las celdas</h3>
+
+        <div class="table-wrap">
+          <div id="spots-table" class="spots-grid">
+            <div class="spots-empty">
+              Selecciona una zona individual para consultar sus celdas.
+            </div>
+          </div>
+
+          <div class="spots-legend">
+            <div class="legend-item">
+              <span class="legend-dot available"></span>
+              Disponible
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot occupied"></span>
+              Ocupada
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <span>Sistema de gestión de parqueaderos · Manizales</span>
+        <span id="last-update">Esperando actualización…</span>
+      </footer>
+    </main>
   </div>
 
-  <div class="metrics-grid">
-    <div class="card">
-      <h3>Recaudo Hoy</h3>
-      <div class="value" id="revenue-day">$0 COP</div>
-    </div>
-    <div class="card">
-      <h3>Recaudo Mes</h3>
-      <div class="value" id="revenue-month">$0 COP</div>
-    </div>
-    <div class="card">
-      <h3>Recaudo Año</h3>
-      <div class="value" id="revenue-year">$0 COP</div>
-    </div>
-    <div class="card">
-      <h3>% Ocupación Actual</h3>
-      <div class="value blue" id="occupancy-rate">0.0%</div>
-    </div>
-  </div>
+  <!-- Modal de Gestión de Usuarios y Herramientas -->
+  <div class="modal" id="user-management-modal">
+    <div class="modal-content">
+      <h3>Herramientas de Administrador</h3>
+      <p>Asignar nuevos usuarios y definir su rol en el sistema.</p>
+      
+      <input type="email" id="user-email-input" placeholder="Correo electrónico del usuario">
+      <select id="user-role-select">
+        <option value="operator">Operador / Recaudador</option>
+        <option value="admin">Administrador del Sistema</option>
+      </select>
 
-  <div class="section-title">Consolidado por Zonas</div>
-  <table>
-    <thead>
-      <tr>
-        <th>ZONA</th>
-        <th>TARIFA BASE</th>
-        <th>CELDAS TOTALES</th>
-        <th>ESTADO</th>
-      </tr>
-    </thead>
-    <tbody id="zones-table">
-      <!-- Carga dinámica -->
-    </tbody>
-  </table>
-
-  <div class="section-title">Mapa de Celdas en Tiempo Real (Zona Coliseo 2)</div>
-  <div class="spots-container" id="spots-grid">
-    <!-- Celdas dinámicas -->
+      <div class="modal-actions">
+        <button class="btn-modal-primary" id="btn-assign-user" type="button">Asignar Usuario</button>
+        <button class="btn-modal-secondary" id="btn-close-modal" type="button">Cerrar</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    async function loadDashboard() {
-      try {
-        // 1. Obtener Métricas de Recaudo y Ocupación
-        const resMetrics = await fetch('/api/admin/metrics');
-        if (resMetrics.ok) {
-          const metrics = await resMetrics.json();
-          document.getElementById('revenue-day').innerText = `$${(metrics.revenue?.day || 0).toLocaleString('es-CO')} COP`;
-          document.getElementById('revenue-month').innerText = `$${(metrics.revenue?.month || 0).toLocaleString('es-CO')} COP`;
-          document.getElementById('revenue-year').innerText = `$${(metrics.revenue?.year || 0).toLocaleString('es-CO')} COP`;
-          document.getElementById('occupancy-rate').innerText = `${metrics.occupancy?.rate || 0}%`;
-        }
+    const API = {
+      metrics: '/api/admin/metrics',
+      zones: '/api/zones',
+      spots: id => `/api/zones/${encodeURIComponent(id)}/spots`,
+      zoneMetrics: id => `/api/admin/metrics?zone_id=${encodeURIComponent(id)}`
+    };
 
-        // 2. Obtener Consolidado de Zonas
-        const resZones = await fetch('/api/zones');
-        if (resZones.ok) {
-          const zones = await resZones.json();
-          const zonesTable = document.getElementById('zones-table');
-          zonesTable.innerHTML = zones.map(z => `
-            <tr>
-              <td><strong>${z.name}</strong></td>
-              <td>$${parseFloat(z.base_rate || 3900).toLocaleString('es-CO')} COP / Hora</td>
-              <td>${z.total_spots || 0} Celdas</td>
-              <td><span class="status-active">Activa</span></td>
-            </tr>
-          `).join('');
-        }
+    const state = {
+      zones: [],
+      selectedZoneId: 'all',
+      charts: {},
+      selectionRequest: 0,
+      globalMetricsData: null
+    };
 
-        // 3. Obtener Celdas de la Zona Coliseo 2 (ID: 2)
-        const resSpots = await fetch('/api/zones/2/spots');
-        if (resSpots.ok) {
-          const spots = await resSpots.json();
-          const spotsGrid = document.getElementById('spots-grid');
-          
-          if (!spots || spots.length === 0) {
-            spotsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">No hay celdas para mostrar en esta zona.</p>';
-            return;
+    const money = value => '$' + Number(value || 0).toLocaleString('es-CO') + ' COP';
+    const number = value => Number(value || 0).toLocaleString('es-CO');
+
+    async function getJSON(url) {
+      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`Error ${response.status} consultando ${url}`);
+      return response.json();
+    }
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    function renderTopMetrics(metrics, titleSuffix = 'General', captionPrefix = 'Total') {
+      const revenue = metrics?.revenue || {};
+      const occupancy = metrics?.occupancy || {};
+
+      document.getElementById('label-metric-day').textContent = `Recaudo hoy · ${titleSuffix}`;
+      document.getElementById('global-day').textContent = money(revenue.day);
+      document.getElementById('caption-metric-day').textContent = `${captionPrefix} diario`;
+
+      document.getElementById('label-metric-month').textContent = `Recaudo del mes · ${titleSuffix}`;
+      document.getElementById('global-month').textContent = money(revenue.month);
+      document.getElementById('caption-metric-month').textContent = `${captionPrefix} mensual`;
+
+      document.getElementById('label-metric-year').textContent = `Recaudo del año · ${titleSuffix}`;
+      document.getElementById('global-year').textContent = money(revenue.year);
+      document.getElementById('caption-metric-year').textContent = `${captionPrefix} anual`;
+
+      document.getElementById('label-metric-occupancy').textContent = `Ocupación · ${titleSuffix}`;
+      document.getElementById('global-occupancy').textContent = `${number(occupancy.rate ?? occupancy.percentage ?? 0)}%`;
+      document.getElementById('caption-metric-occupancy').textContent = `${captionPrefix} de ocupación`;
+    }
+
+    function renderZoneMenu(zones) {
+      const menu = document.getElementById('zone-menu');
+
+      const allButton = `
+        <button class="zone-button ${state.selectedZoneId === 'all' ? 'active' : ''}" data-zone="all">
+          <span class="zone-icon">▦</span>
+          <span class="zone-label">Todas las zonas</span>
+          <span class="zone-arrow">›</span>
+        </button>`;
+
+      const zoneButtons = zones.map(zone => `
+        <button class="zone-button ${String(state.selectedZoneId) === String(zone.id) ? 'active' : ''}" data-zone="${escapeHTML(zone.id)}">
+          <span class="zone-icon">♧</span>
+          <span class="zone-label">${escapeHTML(zone.name || `Zona ${zone.id}`)}</span>
+          <span class="zone-arrow">›</span>
+        </button>
+      `).join('');
+
+      menu.innerHTML = allButton + zoneButtons;
+
+      menu.querySelectorAll('[data-zone]').forEach(button => {
+        button.addEventListener('click', () => {
+          selectZone(button.dataset.zone);
+          document.getElementById('sidebar').classList.remove('open');
+        });
+      });
+    }
+
+    function createChart(canvasId, type, series, color) {
+      const canvas = document.getElementById(canvasId);
+      if (state.charts[canvasId]) state.charts[canvasId].destroy();
+
+      const labels = Array.isArray(series?.labels) ? series.labels : [];
+      const values = Array.isArray(series?.values) ? series.values : [];
+
+      state.charts[canvasId] = new Chart(canvas, {
+        type,
+        data: {
+          labels,
+          datasets: [{
+            label: 'Recaudo (COP)',
+            data: values,
+            borderColor: color,
+            backgroundColor: type === 'bar' ? color : color.replace('1)', '0.14)'),
+            borderWidth: 2,
+            fill: type === 'line',
+            tension: 0.35,
+            pointRadius: 3,
+            borderRadius: type === 'bar' ? 4 : 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: context => money(context.parsed.y) } }
+          },
+          scales: {
+            x: { ticks: { color: '#92afd1' }, grid: { color: 'rgba(120,160,210,.10)' } },
+            y: { beginAtZero: true, ticks: { color: '#92afd1', callback: val => '$' + Number(val).toLocaleString('es-CO') }, grid: { color: 'rgba(120,160,210,.12)' } }
           }
+        }
+      });
+    }
 
-          spotsGrid.innerHTML = spots.map(s => `
-            <div class="spot-card ${s.status === 'occupied' ? 'occupied' : ''}">
-              <div class="spot-number">Celda ${s.spot_number}</div>
-              <div class="spot-status">${s.status === 'occupied' ? 'OCUPADA' : 'DISPONIBLE'}</div>
-              ${s.current_plate ? `<div class="plate">${s.current_plate}</div>` : ''}
-            </div>
-          `).join('');
+    function renderCharts(metrics) {
+      const history = metrics?.history || {};
+      createChart('daily-chart', 'line', history.daily, 'rgba(19,196,245,1)');
+      createChart('monthly-chart', 'bar', history.monthly, 'rgba(19,196,245,1)');
+      createChart('yearly-chart', 'line', history.yearly, 'rgba(167,122,255,1)');
+    }
+
+    async function loadSpots(zoneId) {
+      const container = document.getElementById('spots-table');
+      container.innerHTML = `<div class="spots-empty">Cargando celdas...</div>`;
+
+      try {
+        const spots = await getJSON(API.spots(zoneId));
+        if (String(state.selectedZoneId) !== String(zoneId)) return;
+
+        if (!Array.isArray(spots) || spots.length === 0) {
+          container.innerHTML = `<div class="spots-empty">Esta zona no tiene celdas registradas.</div>`;
+          return;
         }
 
-      } catch (err) {
-        console.error('Error sincronizando dashboard:', err);
+        container.innerHTML = spots.map(spot => {
+          const status = String(spot.status || '').trim().toLowerCase();
+          const occupied = status === 'occupied';
+          const className = occupied ? 'occupied' : 'available';
+          const cellNumber = spot.spot_number ?? spot.id ?? '?';
+          const statusLabel = occupied ? 'Ocupada' : 'Disponible';
+          const plate = spot.current_plate ? ` · Placa: ${spot.current_plate}` : '';
+
+          return `<div class="spot-dot ${className}" title="Celda ${escapeHTML(cellNumber)}: ${statusLabel}${escapeHTML(plate)}">${escapeHTML(cellNumber)}</div>`;
+        }).join('');
+
+      } catch (error) {
+        console.error('Error consultando celdas:', error);
+        if (String(state.selectedZoneId) !== String(zoneId)) return;
+        container.innerHTML = `<div class="spots-empty">No fue posible consultar las celdas.</div>`;
       }
     }
 
-    // Inicialización y actualización en tiempo real cada 2 segundos
-    loadDashboard();
-    setInterval(loadDashboard, 2000);
-  </script>
+    async function selectZone(id) {
+      state.selectedZoneId = id;
+      const requestId = ++state.selectionRequest;
 
+      renderZoneMenu(state.zones);
+
+      const isGlobal = id === 'all';
+      const zone = state.zones.find(z => String(z.id) === String(id));
+      const zoneName = zone?.name || `Zona ${id}`;
+
+      document.getElementById('selected-zone-title').textContent = isGlobal ? 'Todas las zonas' : zoneName;
+      document.getElementById('selected-zone-subtitle').textContent = isGlobal ? 'Vista general de la operación completa' : 'Indicadores y recaudo de la zona seleccionada';
+
+      const message = document.getElementById('zone-message');
+      message.hidden = true;
+
+      const spotsContainer = document.getElementById('spots-table');
+
+      if (isGlobal) {
+        spotsContainer.innerHTML = `<div class="spots-empty">Selecciona una zona individual en el menú para ver sus celdas.</div>`;
+        if (state.globalMetricsData) {
+          renderTopMetrics(state.globalMetricsData, 'General', 'Total');
+        }
+      } else {
+        loadSpots(id);
+      }
+
+      try {
+        const metrics = await getJSON(isGlobal ? API.metrics : API.zoneMetrics(id));
+        if (requestId !== state.selectionRequest) return;
+
+        if (!isGlobal) {
+          renderTopMetrics(metrics, zoneName, 'Zona');
+        }
+
+        renderCharts(metrics);
+
+      } catch (error) {
+        if (requestId !== state.selectionRequest) return;
+        console.error('Error cargando métricas:', error);
+        renderCharts(null);
+        message.textContent = 'No se pudieron cargar las métricas de esta selección.';
+        message.hidden = false;
+      }
+    }
+
+    async function refreshGlobal() {
+      try {
+        const metrics = await getJSON(API.metrics);
+        state.globalMetricsData = metrics;
+
+        if (state.selectedZoneId === 'all') {
+          renderTopMetrics(metrics, 'General', 'Total');
+        }
+
+        document.getElementById('connection-status').textContent = '● Conectado al servidor';
+        document.getElementById('last-update').textContent = 'Última actualización: ' + new Date().toLocaleString('es-CO');
+      } catch (error) {
+        console.error('Error cargando métricas generales:', error);
+        document.getElementById('connection-status').textContent = 'Sin conexión';
+      }
+    }
+
+    async function init() {
+      document.getElementById('mobile-menu').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('open');
+      });
+
+      document.getElementById('period-filter').addEventListener('change', () => {
+        selectZone(state.selectedZoneId);
+      });
+
+      // Lógica de Cerrar Sesión (Redirección al index)
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        window.location.href = 'index.html';
+      });
+
+      // Lógica de Herramientas (Abre el Modal de Usuarios)
+      const userModal = document.getElementById('user-management-modal');
+      document.getElementById('btn-tools').addEventListener('click', () => {
+        userModal.style.display = 'flex';
+      });
+
+      document.getElementById('btn-close-modal').addEventListener('click', () => {
+        userModal.style.display = 'none';
+      });
+
+      document.getElementById('btn-assign-user').addEventListener('click', () => {
+        const emailInput = document.getElementById('user-email-input').value.trim();
+        const roleSelect = document.getElementById('user-role-select').value;
+        
+        if (emailInput) {
+          alert(`¡Usuario ${emailInput} asignado con éxito al rol de ${roleSelect === 'admin' ? 'Administrador' : 'Operador'}!`);
+          document.getElementById('user-email-input').value = '';
+          userModal.style.display = 'none';
+        } else {
+          alert('Por favor ingresa un correo electrónico válido.');
+        }
+      });
+
+      await refreshGlobal();
+
+      try {
+        const zones = await getJSON(API.zones);
+        state.zones = Array.isArray(zones) ? zones : [];
+        renderZoneMenu(state.zones);
+        await selectZone('all');
+      } catch (error) {
+        console.error('Error cargando zonas:', error);
+        document.getElementById('zone-menu').innerHTML = `<div class="spots-empty">No fue posible cargar las zonas.</div>`;
+      }
+    }
+
+    init();
+    setInterval(refreshGlobal, 5000);
+  </script>
 </body>
 </html>
